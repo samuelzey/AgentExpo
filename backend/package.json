@@ -8,8 +8,10 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.34.2",
+    "@anthropic-ai/sdk": "^0.82.0",
     "@circle-fin/x402-batching": "^2.0.4",
+    "@x402/core": "^2.9.0",
+    "@x402/evm": "^2.9.0",
     "better-sqlite3": "^11.3.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",

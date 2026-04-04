@@ -2,25 +2,22 @@ import { GatewayClient } from '@circle-fin/x402-batching/client';
 import { createGatewayMiddleware } from '@circle-fin/x402-batching/server';
 import type { RequestHandler } from 'express';
 
-const SELLER_ADDRESS = process.env.SELLER_ADDRESS as `0x${string}` | undefined;
-const BUYER_PRIVATE_KEY = process.env.BUYER_PRIVATE_KEY as `0x${string}` | undefined;
-
 // ── Seller middleware ────────────────────────────────────────────────────────
 
 let _gatewayMiddleware: ReturnType<typeof createGatewayMiddleware> | null = null;
 
 export function getGatewayMiddleware() {
-  if (!SELLER_ADDRESS) throw new Error('SELLER_ADDRESS not set');
+  const sellerAddress = process.env.SELLER_ADDRESS as `0x${string}`;
+  if (!sellerAddress) throw new Error('SELLER_ADDRESS not set');
   if (!_gatewayMiddleware) {
-    _gatewayMiddleware = createGatewayMiddleware({ sellerAddress: SELLER_ADDRESS });
+    _gatewayMiddleware = createGatewayMiddleware({ sellerAddress });
   }
   return _gatewayMiddleware;
 }
 
 /** Express middleware: require $0.005 USDC to access a route */
 export function requirePayment(amount = '$0.005'): RequestHandler {
-  if (!SELLER_ADDRESS) {
-    // No wallet configured — pass through (dev mode)
+  if (!process.env.SELLER_ADDRESS) {
     return (_req, _res, next) => next();
   }
   return getGatewayMiddleware().require(amount) as RequestHandler;
@@ -31,12 +28,10 @@ export function requirePayment(amount = '$0.005'): RequestHandler {
 let _buyerClient: GatewayClient | null = null;
 
 export function getBuyerClient(): GatewayClient {
-  if (!BUYER_PRIVATE_KEY) throw new Error('BUYER_PRIVATE_KEY not set');
+  const privateKey = process.env.BUYER_PRIVATE_KEY as `0x${string}`;
+  if (!privateKey) throw new Error('BUYER_PRIVATE_KEY not set');
   if (!_buyerClient) {
-    _buyerClient = new GatewayClient({
-      chain: 'arcTestnet',
-      privateKey: BUYER_PRIVATE_KEY,
-    });
+    _buyerClient = new GatewayClient({ chain: 'arcTestnet', privateKey });
   }
   return _buyerClient;
 }
