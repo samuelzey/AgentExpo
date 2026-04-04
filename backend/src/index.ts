@@ -28,6 +28,14 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', version: '3.0' });
 });
 
+// ── Skill ────────────────────────────────────────────────────────────────────
+
+app.get('/skill.md', (_req, res) => {
+  const skillPath = join(dirname(fileURLToPath(import.meta.url)), '../../skill.md');
+  res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+  res.sendFile(skillPath);
+});
+
 // ── Register ─────────────────────────────────────────────────────────────────
 
 app.post('/register', (req, res) => {
