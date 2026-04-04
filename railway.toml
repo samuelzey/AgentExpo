@@ -2,5 +2,5 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "cd backend && pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port $PORT"
+startCommand = "cd backend && npm install && npm start"
 healthcheckPath = "/health"
