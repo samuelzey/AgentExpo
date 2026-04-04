@@ -7,11 +7,13 @@
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --blue:        rgb(0,  72, 184);   /* ethcc9-blue       */
-      --dark-blue:   rgb(0,  32,  87);   /* ethcc9-darkBlue   */
-      --red:         rgb(255, 95, 100);  /* ethcc9-red        */
-      --white:       rgb(245, 250, 253); /* ethcc9-white      */
-      --cannes-dark: rgb(0,  39,  61);   /* cannes-dark       */
+      --blue:        rgb(0,  72, 184);
+      --dark-blue:   rgb(0,  32,  87);
+      --light-blue:  rgb(80, 150, 255);
+      --red:         rgb(255, 95, 100);
+      --white:       rgb(245, 250, 253);
+      --cannes-dark: rgb(0,  39,  61);
+      --divider:     rgba(255,255,255,0.25);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,42 +26,42 @@
       overflow-x: hidden;
     }
 
-    /* ── 3-column grid: 42% | 55% | 3% ── */
+    /* ── Equal 3-column grid ── */
     .page {
       display: grid;
-      grid-template-columns: 42% 55% 3%;
+      grid-template-columns: 1fr 1fr 1fr;
       min-height: 100vh;
     }
 
     .col {
-      border-left: 2px solid var(--cannes-dark);
+      border-left: 1.5px solid var(--divider);
       position: relative;
     }
     .col:first-child { border-left: none; }
 
-    /* ── Giant hero title (spans full viewport) ── */
+    /* ── Giant hero title ── */
     .hero-title {
       position: absolute;
       top: 0;
       left: 0;
       width: 100vw;
-      font-size: clamp(72px, 16.5vw, 200px);
+      font-size: clamp(100px, 22vw, 280px);
       font-weight: 900;
       line-height: 0.88;
       letter-spacing: -0.015em;
       white-space: nowrap;
-      padding: 10px 0 0 18px;
+      padding: 8px 0 0 16px;
       pointer-events: none;
       user-select: none;
       color: var(--white);
     }
 
-    /* Space below title so content starts underneath */
+    /* Space below title */
     .title-gap {
-      height: calc(clamp(72px, 16.5vw, 200px) * 0.88 + 10px);
+      height: calc(clamp(100px, 22vw, 280px) * 0.88 + 8px);
     }
 
-    /* ── Fixed MENU pill ── */
+    /* ── MENU pill ── */
     .menu-pill {
       position: fixed;
       top: 16px;
@@ -68,7 +70,7 @@
       background: var(--cannes-dark);
       color: var(--white);
       border-radius: 999px;
-      padding: 9px 20px;
+      padding: 10px 22px;
       font-family: inherit;
       font-size: 11px;
       font-weight: 700;
@@ -89,33 +91,32 @@
       flex-shrink: 0;
     }
 
-    /* ── Left col ── */
+    /* ── Col 1: info ── */
     .left-inner {
-      padding: 36px 20px 40px 20px;
+      padding: 40px 24px 40px 20px;
       display: flex;
       flex-direction: column;
-      min-height: calc(100vh - (clamp(72px, 16.5vw, 200px) * 0.88 + 10px));
+      min-height: calc(100vh - (clamp(100px, 22vw, 280px) * 0.88 + 8px));
     }
 
     .event-meta p {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 500;
       line-height: 1.65;
-      color: var(--white);
     }
 
     .buttons {
-      margin-top: 24px;
+      margin-top: 28px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 13px 26px;
+      padding: 14px 28px;
       border-radius: 77px;
       font-family: inherit;
       font-size: 12px;
@@ -132,11 +133,11 @@
       color: var(--white);
       border-color: var(--red);
     }
+    .btn-tickets .dot { background: var(--cannes-dark); }
 
     .btn-live {
       background: var(--cannes-dark);
       color: var(--white);
-      border-color: var(--cannes-dark);
     }
 
     .explore {
@@ -148,36 +149,46 @@
       text-transform: uppercase;
       cursor: default;
       user-select: none;
-      opacity: 0.9;
     }
 
-    /* ── Middle col ── */
-    .mid-inner {
-      padding: 36px 32px 40px 32px;
+    /* ── Col 2: Ethereum logo ── */
+    .center-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .eth-logo {
+      width: 55%;
+      max-width: 280px;
+      min-width: 140px;
+    }
+
+    /* ── Col 3: tagline + description ── */
+    .right-inner {
+      padding: 40px 36px 40px 28px;
     }
 
     .tagline {
-      font-size: clamp(22px, 2.6vw, 42px);
+      font-size: clamp(26px, 3vw, 50px);
       font-weight: 900;
       line-height: 1.02;
       text-transform: uppercase;
-      margin-bottom: 20px;
-      color: var(--white);
+      margin-bottom: 22px;
     }
 
     .description {
-      font-size: 13.5px;
+      font-size: 14px;
       font-weight: 400;
       line-height: 1.75;
-      color: var(--white);
-      opacity: 0.82;
-      max-width: 380px;
+      opacity: 0.85;
+      text-align: justify;
     }
   </style>
 </head>
 <body>
 
-  <!-- MENU -->
   <div class="menu-pill">
     <span class="dot"></span>
     MENU
@@ -209,10 +220,33 @@
       </div>
     </div>
 
-    <!-- Col 2 -->
+    <!-- Col 2: Ethereum diamond logo -->
     <div class="col">
       <div class="title-gap"></div>
-      <div class="mid-inner">
+      <div class="center-inner">
+        <svg class="eth-logo" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg">
+          <!-- Upper left face -->
+          <polygon points="150,10 30,200 150,155" fill="rgb(80,140,255)"/>
+          <!-- Upper right face -->
+          <polygon points="150,10 270,200 150,155" fill="rgb(50,100,210)"/>
+          <!-- Mid-left face (dark) -->
+          <polygon points="30,200 150,155 150,255" fill="rgb(0,32,87)"/>
+          <!-- Mid-right face -->
+          <polygon points="270,200 150,155 150,255" fill="rgb(30,80,180)"/>
+          <!-- Lower left face (coral) -->
+          <polygon points="30,200 150,255 150,410" fill="rgb(255,100,105)"/>
+          <!-- Lower right face (coral darker) -->
+          <polygon points="270,200 150,255 150,410" fill="rgb(210,65,75)"/>
+          <!-- Inner upper highlight -->
+          <polygon points="150,75 90,195 150,168 210,195" fill="rgba(0,32,87,0.55)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Col 3 -->
+    <div class="col">
+      <div class="title-gap"></div>
+      <div class="right-inner">
         <div class="tagline">
           The Largest<br>Annual<br>European<br>Ethereum<br>Event.
         </div>
@@ -224,9 +258,6 @@
         </p>
       </div>
     </div>
-
-    <!-- Col 3 (thin right border) -->
-    <div class="col"></div>
 
   </div>
 
