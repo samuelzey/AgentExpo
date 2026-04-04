@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Profile } from './database.js';
 
-const client = new Anthropic();
+const getClient = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MAX_TURNS = 8;
 
 function agentSystemPrompt(profile: Profile): string {
@@ -38,7 +38,7 @@ export async function runConversation(
   const historyB: Anthropic.MessageParam[] = [];
 
   // A opens
-  const opening = await client.messages.create({
+  const opening = await getClient().messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 300,
     system: agentSystemPrompt(profileA),
@@ -54,7 +54,7 @@ export async function runConversation(
 
   for (let i = 0; i < MAX_TURNS; i++) {
     // B responds
-    const bResp = await client.messages.create({
+    const bResp = await getClient().messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 300,
       system: agentSystemPrompt(profileB),
@@ -69,7 +69,7 @@ export async function runConversation(
     if (bText.includes('[DEAL:')) { outcome = 'deal'; dealAmount = parseDealAmount(bText); break; }
 
     // A responds
-    const aResp = await client.messages.create({
+    const aResp = await getClient().messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 300,
       system: agentSystemPrompt(profileA),

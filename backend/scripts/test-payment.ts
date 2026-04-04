@@ -18,7 +18,9 @@ console.log(`Paying for: ${API_BASE}/service/data-query`);
 const response = await client.pay(`${API_BASE}/service/data-query`);
 
 console.log('\n✅ Payment successful!');
-console.log('Response:', JSON.stringify(response.data, null, 2));
+console.log('Data:', JSON.stringify(response.data, null, 2));
+console.log('Arc tx hash:', response.transaction);
+console.log('Amount paid:', response.formattedAmount, 'USDC');
 
 const balances = await client.getBalances();
 console.log(`\nGateway balance after: ${balances.gateway.formattedAvailable} USDC`);

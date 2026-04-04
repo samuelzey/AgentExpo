@@ -53,11 +53,14 @@ export async function processPayment(
     const client = getBuyerClient();
     const url = sellerServiceUrl ?? `${process.env.API_BASE_URL}/service/data-query`;
     const response = await client.pay(url);
-    const txHash = (response as any).arc_tx_hash ?? ('0x' + Math.random().toString(16).slice(2).padStart(64, '0'));
+    const ref = response.transaction; // Circle batch reference (UUID) — Arc tx hash available after batch settles
+    const isOnChainHash = ref.startsWith('0x');
     return {
-      arc_tx_hash: txHash,
-      arc_explorer_url: `https://testnet.arcscan.app/tx/${txHash}`,
-      amount_usdc: amountUsdc,
+      arc_tx_hash: ref,
+      arc_explorer_url: isOnChainHash
+        ? `https://testnet.arcscan.app/tx/${ref}`
+        : `https://gateway-api-testnet.circle.com/payments/${ref}`,
+      amount_usdc: Number(response.formattedAmount),
       simulated: false,
     };
   } catch (err) {

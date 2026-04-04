@@ -1,10 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Profile } from './database.js';
 
-const client = new Anthropic();
+const getClient = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function scoreMatch(profileA: Profile, profileB: Profile): Promise<{ score: number; reasoning: string }> {
-  const message = await client.messages.create({
+  const message = await getClient().messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 200,
     messages: [{
