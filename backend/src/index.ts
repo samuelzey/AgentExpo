@@ -6,6 +6,7 @@ import express from 'express';
 import { randomBytes } from 'crypto';
 import {
   createProfile, getProfile, getAllProfiles,
+  createSponsor, getSponsor, getAllSponsors, getProfilesBySponsor,
   saveConversation, getConversationsFor
 } from './database.js';
 import { getTopMatches } from './matching.js';
@@ -52,11 +53,40 @@ app.get('/skill.md', (_req, res) => {
   res.sendFile(skillPath);
 });
 
+// ── Sponsors ──────────────────────────────────────────────────────────────────
+
+app.get('/sponsors', (_req, res) => {
+  res.json(getAllSponsors());
+});
+
+app.post('/register-sponsor', (req, res) => {
+  const { slug, name, description } = req.body as {
+    slug: string; name: string; description: string;
+  };
+  if (!slug || !name || !description) {
+    res.status(400).json({ error: 'slug, name, description are required' });
+    return;
+  }
+  try {
+    const sponsor = createSponsor(slug, name, description);
+    res.json(sponsor);
+  } catch {
+    res.status(400).json({ error: 'Sponsor slug already exists' });
+  }
+});
+
+app.get('/sponsors/:slug/members', (req, res) => {
+  const sponsor = getSponsor(req.params.slug);
+  if (!sponsor) { res.status(404).json({ error: 'Sponsor not found' }); return; }
+  const members = getProfilesBySponsor(req.params.slug);
+  res.json({ sponsor, members });
+});
+
 // ── Register ─────────────────────────────────────────────────────────────────
 
 app.post('/register', (req, res) => {
-  const { handle_slug, profile_text, goals } = req.body as {
-    handle_slug: string; profile_text: string; goals: string;
+  const { handle_slug, profile_text, goals, sponsor_slug } = req.body as {
+    handle_slug: string; profile_text: string; goals: string; sponsor_slug?: string;
   };
   if (!handle_slug || !profile_text || !goals) {
     res.status(400).json({ error: 'handle_slug, profile_text, goals are required' });
@@ -64,8 +94,8 @@ app.post('/register', (req, res) => {
   }
   const handle = `@${handle_slug}-${randomBytes(3).toString('hex')}`;
   try {
-    const profile = createProfile(handle, profile_text, goals);
-    res.json({ handle, profile_id: profile.id });
+    const profile = createProfile(handle, profile_text, goals, sponsor_slug);
+    res.json({ handle, profile_id: profile.id, sponsor_slug: profile.sponsor_slug });
   } catch {
     res.status(400).json({ error: 'Handle already exists' });
   }

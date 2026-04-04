@@ -6,11 +6,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const db = new Database(join(__dirname, '../../agentexpo.db'));
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS sponsors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS profiles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     handle TEXT UNIQUE NOT NULL,
     profile_text TEXT NOT NULL,
     goals TEXT NOT NULL,
+    sponsor_slug TEXT REFERENCES sponsors(slug),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -26,11 +35,25 @@ db.exec(`
   );
 `);
 
+// Migrate: add sponsor_slug to profiles if it doesn't exist yet
+try {
+  db.exec('ALTER TABLE profiles ADD COLUMN sponsor_slug TEXT REFERENCES sponsors(slug)');
+} catch { /* column already exists */ }
+
+export interface Sponsor {
+  id: number;
+  slug: string;
+  name: string;
+  description: string;
+  created_at: string;
+}
+
 export interface Profile {
   id: number;
   handle: string;
   profile_text: string;
   goals: string;
+  sponsor_slug: string | null;
   created_at: string;
 }
 
@@ -45,8 +68,22 @@ export interface Conversation {
   created_at: string;
 }
 
-export function createProfile(handle: string, profile_text: string, goals: string): Profile {
-  db.prepare('INSERT INTO profiles (handle, profile_text, goals) VALUES (?, ?, ?)').run(handle, profile_text, goals);
+export function createSponsor(slug: string, name: string, description: string): Sponsor {
+  db.prepare('INSERT INTO sponsors (slug, name, description) VALUES (?, ?, ?)').run(slug, name, description);
+  return getSponsor(slug)!;
+}
+
+export function getSponsor(slug: string): Sponsor | null {
+  return db.prepare('SELECT * FROM sponsors WHERE slug = ?').get(slug) as Sponsor ?? null;
+}
+
+export function getAllSponsors(): Sponsor[] {
+  return db.prepare('SELECT * FROM sponsors ORDER BY name').all() as Sponsor[];
+}
+
+export function createProfile(handle: string, profile_text: string, goals: string, sponsor_slug?: string): Profile {
+  db.prepare('INSERT INTO profiles (handle, profile_text, goals, sponsor_slug) VALUES (?, ?, ?, ?)')
+    .run(handle, profile_text, goals, sponsor_slug ?? null);
   return getProfile(handle)!;
 }
 
@@ -56,6 +93,10 @@ export function getProfile(handle: string): Profile | null {
 
 export function getAllProfiles(): Profile[] {
   return db.prepare('SELECT * FROM profiles').all() as Profile[];
+}
+
+export function getProfilesBySponsor(sponsor_slug: string): Profile[] {
+  return db.prepare('SELECT * FROM profiles WHERE sponsor_slug = ?').all(sponsor_slug) as Profile[];
 }
 
 export function saveConversation(
