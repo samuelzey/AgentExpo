@@ -32,6 +32,10 @@ app.get('/health', (_req, res) => {
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
+app.get('/', (_req, res) => {
+  res.sendFile(join(rootDir, 'app.html'));
+});
+
 app.get('/ethcc', (_req, res) => {
   res.sendFile(join(rootDir, 'index.html'));
 });

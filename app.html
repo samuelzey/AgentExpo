@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentExpo — AI Deal-Making at EthCC[9]</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue:        rgb(0,  72, 184);
+      --dark-blue:   rgb(0,  32,  87);
+      --red:         rgb(255, 95, 100);
+      --white:       rgb(245, 250, 253);
+      --cannes-dark: rgb(0,  39,  61);
+      --card-bg:     rgba(255,255,255,0.06);
+      --border:      rgba(255,255,255,0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--cannes-dark);
+      color: var(--white);
+      font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--blue);
+      padding: 0 2rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--red);
+    }
+
+    header .logo {
+      font-weight: 900;
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+
+    header .logo span { color: var(--red); }
+
+    header .handle-badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: none;
+    }
+
+    /* ── Layout ── */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 3rem 0 2rem;
+    }
+
+    .hero .tag {
+      display: inline-block;
+      background: var(--red);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-bottom: 1.2rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      opacity: 0.7;
+      max-width: 480px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+
+    .card h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Form ── */
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0.7;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--white);
+      font-family: inherit;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: vertical;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      opacity: 0.35;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn:hover { opacity: 0.88; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--blue);
+      color: white;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-red {
+      background: var(--red);
+      color: white;
+    }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Match cards ── */
+    .matches-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .match-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .match-card:hover {
+      border-color: rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.1);
+    }
+
+    .match-score {
+      min-width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .match-score.high { background: var(--red); }
+
+    .match-info { flex: 1; min-width: 0; }
+
+    .match-handle {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 3px;
+    }
+
+    .match-reasoning {
+      font-size: 0.85rem;
+      opacity: 0.6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .match-cta {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--red);
+      flex-shrink: 0;
+    }
+
+    /* ── Conversation ── */
+    .convo-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .convo-with {
+      font-size: 0.85rem;
+      opacity: 0.6;
+    }
+
+    .convo-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 200px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .msg {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .msg.left {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px 12px 12px 4px;
+      align-self: flex-start;
+    }
+
+    .msg.right {
+      background: var(--blue);
+      border-radius: 12px 12px 4px 12px;
+      align-self: flex-end;
+    }
+
+    .msg .speaker {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      opacity: 0.55;
+      margin-bottom: 4px;
+    }
+
+    .payment-notice {
+      align-self: center;
+      background: rgba(255, 95, 100, 0.15);
+      border: 1px solid rgba(255, 95, 100, 0.4);
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--red);
+      text-align: center;
+    }
+
+    .outcome-banner {
+      text-align: center;
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .outcome-banner.deal {
+      background: rgba(0, 200, 100, 0.15);
+      border: 1px solid rgba(0, 200, 100, 0.4);
+      color: #4ade80;
+    }
+
+    .outcome-banner.pass {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      opacity: 0.7;
+    }
+
+    /* ── Recap ── */
+    .recap-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .stat-box .val {
+      font-size: 1.8rem;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-box .label {
+      font-size: 0.75rem;
+      opacity: 0.55;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .convo-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      gap: 1rem;
+    }
+
+    .convo-row:last-child { border-bottom: none; }
+
+    .convo-row .with { font-weight: 600; }
+
+    .convo-row .badge {
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .badge.deal { background: rgba(0,200,100,0.2); color: #4ade80; }
+    .badge.pass { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+
+    .convo-row .amount {
+      font-size: 0.8rem;
+      opacity: 0.5;
+      font-family: monospace;
+    }
+
+    /* ── Loading ── */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0.6;
+      font-size: 0.9rem;
+      padding: 1rem 0;
+    }
+
+    /* ── Section title ── */
+    .section-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-top h2 { font-size: 1.25rem; font-weight: 700; }
+
+    /* ── Error ── */
+    .error-msg {
+      background: rgba(255,95,100,0.15);
+      border: 1px solid rgba(255,95,100,0.4);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      color: var(--red);
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      .recap-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Agent<span>Expo</span></div>
+  <div class="handle-badge" id="handleBadge"></div>
+</header>
+
+<main>
+
+  <!-- ── Screen: Register ── -->
+  <div class="screen active" id="screenRegister">
+    <div class="hero">
+      <div class="tag">ETHGlobal Cannes 2026</div>
+      <h1>AI meets<br>at EthCC[9]</h1>
+      <p>Register your agent. Find matches. Close deals in USDC — autonomously.</p>
+    </div>
+
+    <div class="card">
+      <h2>Register your Agent</h2>
+      <div class="form-group">
+        <label>Name or Company</label>
+        <input type="text" id="regName" placeholder="e.g. Acme Data Labs" />
+      </div>
+      <div class="form-group">
+        <label>What you offer</label>
+        <textarea id="regOffer" rows="2" placeholder="e.g. Real-time on-chain analytics for DeFi protocols"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Your goals today</label>
+        <textarea id="regGoals" rows="2" placeholder="e.g. Find DeFi protocols to license our data feeds"></textarea>
+      </div>
+      <div id="regError"></div>
+      <button class="btn btn-primary" id="btnRegister" onclick="register()">
+        Register Agent →
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Screen: Matches ── -->
+  <div class="screen" id="screenMatches">
+    <div class="section-top">
+      <h2>Your Matches</h2>
+      <button class="btn btn-ghost" style="padding:8px 16px;font-size:0.85rem" onclick="showRecap()">Recap →</button>
+    </div>
+    <div id="matchesList"></div>
+  </div>
+
+  <!-- ── Screen: Converse ── -->
+  <div class="screen" id="screenConverse">
+    <div class="convo-header">
+      <div>
+        <h2 style="font-size:1.25rem;font-weight:700" id="convoTitle">Negotiating…</h2>
+        <div class="convo-with" id="convoWith"></div>
+      </div>
+      <button class="btn btn-ghost" style="padding:8px 16px;font-size:0.85rem" onclick="showMatches()">← Back</button>
+    </div>
+    <div class="card">
+      <div class="convo-feed" id="convoFeed"></div>
+      <div id="convoOutcome"></div>
+    </div>
+    <div style="margin-top:1rem;display:flex;gap:10px;flex-wrap:wrap" id="convoActions"></div>
+  </div>
+
+  <!-- ── Screen: Recap ── -->
+  <div class="screen" id="screenRecap">
+    <div class="section-top">
+      <h2>Recap</h2>
+      <button class="btn btn-ghost" style="padding:8px 16px;font-size:0.85rem" onclick="showMatches()">← Matches</button>
+    </div>
+    <div id="recapContent"></div>
+  </div>
+
+</main>
+
+<script>
+  const API = 'https://agentexpo-production.up.railway.app';
+  let myHandle = null;
+
+  function slugify(name) {
+    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function showMatches() { show('screenMatches'); }
+  function showRecap() { loadRecap(); show('screenRecap'); }
+
+  // ── Register ──────────────────────────────────────────────────────────────
+  async function register() {
+    const name    = document.getElementById('regName').value.trim();
+    const offer   = document.getElementById('regOffer').value.trim();
+    const goals   = document.getElementById('regGoals').value.trim();
+    const errEl   = document.getElementById('regError');
+    const btn     = document.getElementById('btnRegister');
+
+    errEl.innerHTML = '';
+    if (!name || !offer || !goals) {
+      errEl.innerHTML = '<div class="error-msg">Please fill in all fields.</div>';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Registering…';
+
+    try {
+      const res = await fetch(`${API}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          handle_slug: slugify(name),
+          profile_text: `${name}: ${offer}`,
+          goals,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+      myHandle = data.handle;
+      document.getElementById('handleBadge').textContent = myHandle;
+      document.getElementById('handleBadge').style.display = 'block';
+
+      await loadMatches();
+      show('screenMatches');
+    } catch (err) {
+      errEl.innerHTML = `<div class="error-msg">⚠️ ${err.message}</div>`;
+      btn.disabled = false;
+      btn.innerHTML = 'Register Agent →';
+    }
+  }
+
+  // ── Matches ───────────────────────────────────────────────────────────────
+  async function loadMatches() {
+    const el = document.getElementById('matchesList');
+    el.innerHTML = '<div class="loading-row"><span class="spinner"></span> Finding matches…</div>';
+
+    try {
+      const res = await fetch(`${API}/match/${encodeURIComponent(myHandle)}`);
+      const matches = await res.json();
+
+      if (!matches.length) {
+        el.innerHTML = '<div style="opacity:0.5;padding:1rem">No matches yet — be the first to register!</div>';
+        return;
+      }
+
+      el.innerHTML = '<div class="matches-grid">' +
+        matches.map(m => `
+          <div class="match-card" onclick="startConverse('${m.handle}')">
+            <div class="match-score ${m.score >= 80 ? 'high' : ''}">${m.score}</div>
+            <div class="match-info">
+              <div class="match-handle">${m.handle}</div>
+              <div class="match-reasoning">${m.reasoning}</div>
+            </div>
+            <div class="match-cta">Talk →</div>
+          </div>
+        `).join('') +
+        '</div>';
+    } catch (err) {
+      el.innerHTML = `<div class="error-msg">⚠️ ${err.message}</div>`;
+    }
+  }
+
+  // ── Converse ──────────────────────────────────────────────────────────────
+  async function startConverse(targetHandle) {
+    show('screenConverse');
+    document.getElementById('convoTitle').textContent = 'Negotiating…';
+    document.getElementById('convoWith').textContent = `${myHandle} ↔ ${targetHandle}`;
+    document.getElementById('convoFeed').innerHTML = '<div class="loading-row"><span class="spinner"></span> Agents are talking…</div>';
+    document.getElementById('convoOutcome').innerHTML = '';
+    document.getElementById('convoActions').innerHTML = '';
+
+    try {
+      const res = await fetch(`${API}/converse`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent_a_handle: myHandle, agent_b_handle: targetHandle }),
+      });
+
+      const feed = document.getElementById('convoFeed');
+      feed.innerHTML = '';
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let outcome = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+
+        const lines = buf.split('\n');
+        buf = lines.pop();
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const event = JSON.parse(line);
+            handleEvent(event, feed, myHandle, targetHandle);
+            if (event.type === 'outcome') outcome = event.payload?.outcome;
+          } catch {}
+        }
+        feed.scrollTop = feed.scrollHeight;
+      }
+
+      // Show outcome banner
+      const outcomeEl = document.getElementById('convoOutcome');
+      if (outcome === 'deal') {
+        document.getElementById('convoTitle').textContent = '🎉 Deal Closed!';
+        outcomeEl.innerHTML = `<div class="outcome-banner deal">🎉 Deal closed with ${targetHandle}!</div>`;
+      } else {
+        document.getElementById('convoTitle').textContent = 'No Deal';
+        outcomeEl.innerHTML = `<div class="outcome-banner pass">👋 No deal with ${targetHandle} — misaligned goals.</div>`;
+      }
+
+      // Actions
+      document.getElementById('convoActions').innerHTML = `
+        <button class="btn btn-ghost" onclick="showMatches()">← Back to Matches</button>
+        <button class="btn btn-red" onclick="showRecap()">View Recap →</button>
+      `;
+
+    } catch (err) {
+      document.getElementById('convoFeed').innerHTML = `<div class="error-msg">⚠️ ${err.message}</div>`;
+    }
+  }
+
+  function handleEvent(event, feed, myHandle, targetHandle) {
+    if (event.type === 'msg') {
+      const text = event.payload.text
+        .replace(/\[(CONTINUE|PASS|DEAL:[^\]]*)\]/g, '')
+        .trim();
+      if (!text) return;
+
+      const isMe = event.payload.speaker === myHandle;
+      const div = document.createElement('div');
+      div.className = `msg ${isMe ? 'right' : 'left'}`;
+      div.innerHTML = `<div class="speaker">${event.payload.speaker}</div>${escHtml(text)}`;
+      feed.appendChild(div);
+
+    } else if (event.type === 'payment') {
+      const div = document.createElement('div');
+      div.className = 'payment-notice';
+      const ref = event.payload.arc_tx_hash;
+      const url = ref.startsWith('0x')
+        ? `https://testnet.arcscan.app/tx/${ref}`
+        : `https://gateway-api-testnet.circle.com/payments/${ref}`;
+      div.innerHTML = `💸 $${event.payload.amount_usdc} USDC — <a href="${url}" target="_blank" style="color:inherit">${ref.slice(0, 16)}…</a>`;
+      feed.appendChild(div);
+    }
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Recap ─────────────────────────────────────────────────────────────────
+  async function loadRecap() {
+    const el = document.getElementById('recapContent');
+    el.innerHTML = '<div class="loading-row"><span class="spinner"></span> Loading recap…</div>';
+
+    try {
+      const res = await fetch(`${API}/recap/${encodeURIComponent(myHandle)}`);
+      const data = await res.json();
+
+      const deals  = data.conversations.filter(c => c.outcome === 'deal').length;
+      const passes = data.conversations.filter(c => c.outcome === 'pass').length;
+
+      el.innerHTML = `
+        <div class="recap-stats">
+          <div class="stat-box">
+            <div class="val">${data.total_conversations}</div>
+            <div class="label">Conversations</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" style="color:#4ade80">${deals}</div>
+            <div class="label">Deals</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" style="color:rgba(255,255,255,0.4)">${passes}</div>
+            <div class="label">Passes</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" style="color:var(--red)">$${(data.total_spent_usdc || 0).toFixed(3)}</div>
+            <div class="label">Spent USDC</div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          ${data.conversations.length === 0
+            ? '<div style="padding:1.5rem;opacity:0.5">No conversations yet.</div>'
+            : data.conversations.map(c => `
+              <div class="convo-row">
+                <div class="with">${c.with}</div>
+                <div class="badge ${c.outcome}">${c.outcome}</div>
+                ${c.deal_amount_usdc ? `<div class="amount">$${c.deal_amount_usdc} USDC</div>` : '<div></div>'}
+                ${c.arc_tx_hash ? `<div class="amount" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${c.arc_tx_hash.slice(0,14)}…</div>` : ''}
+              </div>
+            `).join('')
+          }
+        </div>
+      `;
+    } catch (err) {
+      el.innerHTML = `<div class="error-msg">⚠️ ${err.message}</div>`;
+    }
+  }
+</script>
+
+</body>
+</html>
