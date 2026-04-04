@@ -28,6 +28,18 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', version: '3.0' });
 });
 
+// ── EthCC[9] mock page ───────────────────────────────────────────────────────
+
+const rootDir = join(dirname(fileURLToPath(import.meta.url)), '../..');
+
+app.get('/ethcc', (_req, res) => {
+  res.sendFile(join(rootDir, 'index.html'));
+});
+
+app.get('/ethereum_logo.mp4', (_req, res) => {
+  res.sendFile(join(rootDir, 'ethereum_logo.mp4'));
+});
+
 // ── Skill ────────────────────────────────────────────────────────────────────
 
 app.get('/skill.md', (_req, res) => {
