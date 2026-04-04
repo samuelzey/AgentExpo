@@ -160,9 +160,10 @@
     }
 
     .eth-logo {
-      width: 55%;
-      max-width: 280px;
-      min-width: 140px;
+      width: 65%;
+      max-width: 320px;
+      min-width: 160px;
+      border-radius: 500px;
     }
 
     /* ── Col 3: tagline + description ── */
@@ -224,22 +225,7 @@
     <div class="col">
       <div class="title-gap"></div>
       <div class="center-inner">
-        <svg class="eth-logo" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg">
-          <!-- Upper left face -->
-          <polygon points="150,10 30,200 150,155" fill="rgb(80,140,255)"/>
-          <!-- Upper right face -->
-          <polygon points="150,10 270,200 150,155" fill="rgb(50,100,210)"/>
-          <!-- Mid-left face (dark) -->
-          <polygon points="30,200 150,155 150,255" fill="rgb(0,32,87)"/>
-          <!-- Mid-right face -->
-          <polygon points="270,200 150,155 150,255" fill="rgb(30,80,180)"/>
-          <!-- Lower left face (coral) -->
-          <polygon points="30,200 150,255 150,410" fill="rgb(255,100,105)"/>
-          <!-- Lower right face (coral darker) -->
-          <polygon points="270,200 150,255 150,410" fill="rgb(210,65,75)"/>
-          <!-- Inner upper highlight -->
-          <polygon points="150,75 90,195 150,168 210,195" fill="rgba(0,32,87,0.55)"/>
-        </svg>
+        <video class="eth-logo" src="/ethereum_logo.mp4" autoplay loop muted playsinline></video>
       </div>
     </div>
 
