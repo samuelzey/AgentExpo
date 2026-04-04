@@ -45,7 +45,7 @@ export async function processPayment(
   sellerServiceUrl?: string
 ): Promise<{ arc_tx_hash: string; arc_explorer_url: string; amount_usdc: number; simulated: boolean }> {
 
-  if (!BUYER_PRIVATE_KEY || !SELLER_ADDRESS) {
+  if (!process.env.BUYER_PRIVATE_KEY || !process.env.SELLER_ADDRESS) {
     return simulatePayment(buyerHandle, sellerHandle, amountUsdc);
   }
 
