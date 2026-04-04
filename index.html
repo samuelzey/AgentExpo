@@ -94,14 +94,14 @@
 
     /* ── Col 1: info ── */
     .left-inner {
-      padding: 40px 24px 40px 20px;
+      padding: 56px 24px 40px 20px;
       display: flex;
       flex-direction: column;
       min-height: calc(100vh - (clamp(100px, 25vw, 320px) * 0.88 + 8px));
     }
 
     .event-meta p {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 500;
       line-height: 1.65;
     }
@@ -171,7 +171,11 @@
 
     /* ── Col 3: tagline + description ── */
     .right-inner {
-      padding: 40px 36px 40px 28px;
+      padding: 0 36px 40px 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: calc(100vh - (clamp(100px, 25vw, 320px) * 0.88 + 8px));
     }
 
     .tagline {
