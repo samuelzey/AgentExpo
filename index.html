@@ -45,7 +45,7 @@
       top: 0;
       left: 0;
       width: 100vw;
-      font-size: clamp(100px, 22vw, 280px);
+      font-size: clamp(100px, 25vw, 320px);
       font-weight: 900;
       line-height: 0.88;
       letter-spacing: -0.015em;
@@ -54,11 +54,12 @@
       pointer-events: none;
       user-select: none;
       color: var(--white);
+      overflow: visible;
     }
 
     /* Space below title */
     .title-gap {
-      height: calc(clamp(100px, 22vw, 280px) * 0.88 + 8px);
+      height: calc(clamp(100px, 25vw, 320px) * 0.88 + 8px);
     }
 
     /* ── MENU pill ── */
@@ -96,7 +97,7 @@
       padding: 40px 24px 40px 20px;
       display: flex;
       flex-direction: column;
-      min-height: calc(100vh - (clamp(100px, 22vw, 280px) * 0.88 + 8px));
+      min-height: calc(100vh - (clamp(100px, 25vw, 320px) * 0.88 + 8px));
     }
 
     .event-meta p {
@@ -156,14 +157,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 12px;
+      height: calc(100vh - (clamp(100px, 25vw, 320px) * 0.88 + 8px));
     }
 
     .eth-logo {
-      width: 65%;
-      max-width: 320px;
-      min-width: 160px;
-      border-radius: 500px;
+      width: 88%;
+      max-width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
     /* ── Col 3: tagline + description ── */
