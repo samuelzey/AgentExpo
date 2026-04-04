@@ -54,8 +54,13 @@ app.get('/match/:handle', async (req, res) => {
   if (!profile) { res.status(404).json({ error: 'Agent not found' }); return; }
   const all = getAllProfiles();
   if (all.length < 2) { res.json([]); return; }
-  const matches = await getTopMatches(req.params.handle, all, profile);
-  res.json(matches);
+  try {
+    const matches = await getTopMatches(req.params.handle, all, profile);
+    res.json(matches);
+  } catch (err) {
+    console.error('Match error:', err);
+    res.status(500).json({ error: String(err) });
+  }
 });
 
 // ── Converse ──────────────────────────────────────────────────────────────────
@@ -72,21 +77,27 @@ app.post('/converse', async (req, res) => {
   res.setHeader('Content-Type', 'application/x-ndjson');
   res.setHeader('Transfer-Encoding', 'chunked');
 
-  const { messages, outcome, dealAmount } = await runConversation(profileA, profileB);
+  try {
+    const { messages, outcome, dealAmount } = await runConversation(profileA, profileB);
 
-  for (const msg of messages) {
-    res.write(JSON.stringify({ type: 'msg', payload: msg }) + '\n');
+    for (const msg of messages) {
+      res.write(JSON.stringify({ type: 'msg', payload: msg }) + '\n');
+    }
+
+    let arcTxHash: string | undefined;
+    if (outcome === 'deal' && dealAmount) {
+      const payment = await processPayment(agent_a_handle, agent_b_handle, dealAmount);
+      arcTxHash = payment.arc_tx_hash;
+      res.write(JSON.stringify({ type: 'payment', payload: payment }) + '\n');
+    }
+
+    saveConversation(agent_a_handle, agent_b_handle, messages, outcome, dealAmount ?? undefined, arcTxHash);
+    res.write(JSON.stringify({ type: 'outcome', payload: { outcome, deal_amount_usdc: dealAmount, arc_tx_hash: arcTxHash } }) + '\n');
+  } catch (err) {
+    console.error('Converse error:', err);
+    res.write(JSON.stringify({ type: 'error', payload: { message: String(err) } }) + '\n');
   }
 
-  let arcTxHash: string | undefined;
-  if (outcome === 'deal' && dealAmount) {
-    const payment = await processPayment(agent_a_handle, agent_b_handle, dealAmount);
-    arcTxHash = payment.arc_tx_hash;
-    res.write(JSON.stringify({ type: 'payment', payload: payment }) + '\n');
-  }
-
-  saveConversation(agent_a_handle, agent_b_handle, messages, outcome, dealAmount ?? undefined, arcTxHash);
-  res.write(JSON.stringify({ type: 'outcome', payload: { outcome, deal_amount_usdc: dealAmount, arc_tx_hash: arcTxHash } }) + '\n');
   res.end();
 });
 
