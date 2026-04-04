@@ -86,9 +86,11 @@ app.post('/converse', async (req, res) => {
 
     let arcTxHash: string | undefined;
     if (outcome === 'deal' && dealAmount) {
-      const payment = await processPayment(agent_a_handle, agent_b_handle, dealAmount);
+      // x402 demo payment is always $0.005 USDC (the hardcoded service price).
+      // The negotiated dealAmount is stored for record-keeping only.
+      const payment = await processPayment(agent_a_handle, agent_b_handle, 0.005);
       arcTxHash = payment.arc_tx_hash;
-      res.write(JSON.stringify({ type: 'payment', payload: payment }) + '\n');
+      res.write(JSON.stringify({ type: 'payment', payload: { ...payment, deal_amount_usdc: dealAmount } }) + '\n');
     }
 
     saveConversation(agent_a_handle, agent_b_handle, messages, outcome, dealAmount ?? undefined, arcTxHash);
