@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EthCC[9]</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #0037FF;
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      min-height: 100vh;
+    }
+
+    .col {
+      border-left: 1px solid rgba(255,255,255,0.25);
+      position: relative;
+    }
+    .col:first-child { border-left: none; }
+
+    /* ── Hero title ── */
+    .hero-title {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 300%; /* spans all 3 cols */
+      font-size: clamp(100px, 18vw, 220px);
+      font-weight: 700;
+      line-height: 0.88;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      padding: 12px 0 0 16px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* ── Menu button ── */
+    .menu-btn {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0a1628;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 22px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: default;
+      z-index: 10;
+    }
+    .menu-btn .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #F25840;
+      display: inline-block;
+    }
+
+    /* ── Left col content ── */
+    .left-content {
+      padding-top: calc(clamp(100px, 18vw, 220px) * 0.88 + 28px);
+      padding-left: 24px;
+      padding-bottom: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100vh;
+    }
+
+    .event-info {
+      margin-top: 40px;
+    }
+
+    .event-info p {
+      font-size: 15px;
+      line-height: 1.6;
+      opacity: 0.95;
+    }
+
+    .buttons {
+      margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+      cursor: default;
+      width: fit-content;
+    }
+    .btn .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.8;
+      display: inline-block;
+    }
+
+    .btn-tickets {
+      background: #F25840;
+      color: #fff;
+    }
+
+    .btn-live {
+      background: #0a1628;
+      color: #fff;
+    }
+
+    .explore {
+      margin-top: auto;
+      padding-top: 60px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.9;
+      cursor: default;
+      user-select: none;
+    }
+
+    /* ── Right col content ── */
+    .right-content {
+      padding-top: calc(clamp(100px, 18vw, 220px) * 0.88 + 28px);
+      padding-left: 32px;
+      padding-right: 32px;
+      padding-bottom: 40px;
+    }
+
+    .tagline {
+      font-size: clamp(28px, 3.2vw, 50px);
+      font-weight: 700;
+      line-height: 1.05;
+      text-transform: uppercase;
+      margin-top: 60px;
+      margin-bottom: 24px;
+    }
+
+    .description {
+      font-size: 14px;
+      line-height: 1.75;
+      opacity: 0.85;
+      max-width: 380px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Menu -->
+  <div class="menu-btn">
+    <span class="dot"></span>
+    MENU
+  </div>
+
+  <div class="grid">
+
+    <!-- Col 1: title + info -->
+    <div class="col">
+      <div class="hero-title">EthCC[9]</div>
+      <div class="left-content">
+        <div class="event-info">
+          <p>March 30 → April 02, 2026</p>
+          <p>Palais des Festivals</p>
+          <p>Cannes, FR</p>
+
+          <div class="buttons">
+            <div class="btn btn-tickets">
+              <span class="dot"></span>
+              BUY TICKETS
+            </div>
+            <div class="btn btn-live">
+              <span class="dot"></span>
+              LIVE STREAMS
+            </div>
+          </div>
+        </div>
+
+        <div class="explore">EXPLORE THE AGENDA &nbsp;&#8964;</div>
+      </div>
+    </div>
+
+    <!-- Col 2: empty (title spans over) -->
+    <div class="col"></div>
+
+    <!-- Col 3: tagline + description -->
+    <div class="col">
+      <div class="right-content">
+        <div class="tagline">
+          The Largest<br>Annual<br>European<br>Ethereum<br>Event.
+        </div>
+        <p class="description">
+          The Ethereum Community Conference (EthCC) is the largest and longest-running annual European Ethereum event focused on technology and community. Four intense days of conferences, networking and learning.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
