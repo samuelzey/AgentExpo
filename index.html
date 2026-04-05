@@ -142,6 +142,13 @@
     .btn-live {
       background: var(--cannes-dark);
       color: var(--white);
+      cursor: default;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.revealed .btn-live {
+      background: var(--white);
+      color: var(--cannes-dark);
+      cursor: pointer;
     }
 
     .explore {
@@ -250,9 +257,9 @@
               <span class="dot"></span>
               BUY TICKETS
             </div>
-            <div class="btn btn-live">
+            <div class="btn btn-live" id="btnLive" onclick="joinEthAC()">
               <span class="dot"></span>
-              LIVE STREAMS
+              <span id="btnLiveText">LIVE STREAMS</span>
             </div>
           </div>
         </div>
@@ -287,10 +294,15 @@
   </div>
 
 <script>
+function joinEthAC() {
+  if (document.body.classList.contains('revealed')) {
+    window.location.href = '/';
+  }
+}
+
 function reveal() {
   if (document.body.classList.contains('revealed')) return;
 
-  // Glitch the hero title briefly, then settle
   const title = document.querySelector('.hero-title');
   const glitchFrames = ['EthCC[9]', 'EthAI[9]', 'EthCC[9]', 'Ag3nt[9]', '▓▓▓▓▓[9]', 'EthCC[9]', 'EthA▓[9]', 'EthAC[9]'];
   let i = 0;
@@ -299,8 +311,11 @@ function reveal() {
     i++;
     if (i >= glitchFrames.length) {
       clearInterval(glitch);
-      // Now swap EUROPEAN → AGENT
       document.body.classList.add('revealed');
+      // Swap button text after a short delay
+      setTimeout(() => {
+        document.getElementById('btnLiveText').textContent = 'JOIN ETHAC NOW';
+      }, 300);
     }
   }, 180);
 }
