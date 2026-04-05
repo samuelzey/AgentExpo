@@ -312,6 +312,9 @@ function reveal() {
     if (i >= glitchFrames.length) {
       clearInterval(glitch);
       document.body.classList.add('revealed');
+      // Speed up video
+      const video = document.querySelector('.eth-logo');
+      if (video) video.playbackRate = 3;
       // Swap button text after a short delay
       setTimeout(() => {
         document.getElementById('btnLiveText').textContent = 'JOIN ETHAC NOW';
