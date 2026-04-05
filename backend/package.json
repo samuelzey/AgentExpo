@@ -7,6 +7,9 @@
     "start": "tsx src/index.ts",
     "build": "tsc"
   },
+  "optionalDependencies": {
+    "@0gfoundation/0g-ts-sdk": "^1.2.1"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
     "@circle-fin/x402-batching": "^2.0.4",
@@ -14,6 +17,7 @@
     "@x402/evm": "^2.9.0",
     "better-sqlite3": "^11.3.0",
     "dotenv": "^16.4.5",
+    "ethers": "^6.13.1",
     "express": "^4.21.0",
     "viem": "^2.21.0"
   },

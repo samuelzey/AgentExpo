@@ -5,3 +5,9 @@ buildCommand = "cd backend && npm install"
 [deploy]
 startCommand = "cd backend && npm start"
 healthcheckPath = "/health"
+
+[build.nixpacksConfig]
+providers = ["node"]
+
+[variables]
+NODE_VERSION = "20"
