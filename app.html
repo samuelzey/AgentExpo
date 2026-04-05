@@ -241,7 +241,7 @@
     .outcome-banner.pass { background: var(--bg); border: 1.5px solid var(--border); color: var(--sub); }
 
     /* ── Recap ── */
-    .recap-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+    .recap-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
     .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1rem; text-align: center; box-shadow: var(--shadow); }
     .stat-box .val { font-size: 1.9rem; font-weight: 900; line-height: 1; margin-bottom: 4px; color: var(--ink); }
     .stat-box .label { font-size: 0.72rem; color: var(--sub); text-transform: uppercase; letter-spacing: 0.06em; }
@@ -1041,7 +1041,6 @@
       const passes = data.conversations.filter(c => c.outcome === 'pass').length;
       el.innerHTML = `
         <div class="recap-stats">
-          <div class="stat-box"><div class="val">${data.total_conversations}</div><div class="label">Conversations</div></div>
           <div class="stat-box"><div class="val" style="color:#4ade80">${deals}</div><div class="label">Deals</div></div>
           <div class="stat-box"><div class="val" style="color:var(--sub)">${passes}</div><div class="label">Passes</div></div>
           <div class="stat-box"><div class="val" style="color:var(--red)">$${(data.total_spent_usdc || 0).toFixed(3)}</div><div class="label">Spent USDC</div></div>
