@@ -159,20 +159,54 @@ app.get('/gateway-balance', async (_req, res) => {
 });
 
 // ── Faucet ────────────────────────────────────────────────────────────────────
-// Credits 1 USDC to the agent's tracked balance in the DB — no ETH for gas needed.
+// Makes a real Circle Gateway payment of $1.00 USDC (no Arc ETH needed).
+// Credits the tracked balance in DB and returns the Circle txRef.
 
-app.post('/faucet', (req, res) => {
+app.post('/faucet', async (req, res) => {
   const { handle } = req.body as { handle: string };
   if (!handle) { res.status(400).json({ error: 'handle is required' }); return; }
 
   const profile = getProfile(handle);
   if (!profile) { res.status(404).json({ error: `${handle} not found` }); return; }
 
-  const result = claimFaucet(handle);
-  if (!result.ok) {
-    res.status(400).json({ error: result.error }); return;
+  // Check claimed before making payment
+  if (profile.faucet_claimed) {
+    res.status(400).json({ error: 'Already claimed 1 USDC faucet' }); return;
   }
-  res.json({ ok: true, amount_usdc: 1.0, new_balance: result.balance, arc_address: profile.arc_address });
+
+  let txRef: string | null = null;
+  let txUrl: string | null = null;
+
+  // Try real Circle Gateway payment ($1.00 from BUYER → SELLER)
+  if (process.env.BUYER_PRIVATE_KEY && process.env.SELLER_ADDRESS) {
+    try {
+      const client = getBuyerClient();
+      const url    = `${process.env.API_BASE_URL ?? 'https://agentexpo-production.up.railway.app'}/service/data-query?amount=1.0000`;
+      const resp   = await client.pay(url);
+      txRef = resp.transaction || null;
+      if (txRef) {
+        txUrl = txRef.startsWith('0x')
+          ? `https://testnet.arcscan.app/tx/${txRef}`
+          : `https://gateway-api-testnet.circle.com/payments/${txRef}`;
+        console.log(`Faucet real payment: ${txRef}`);
+      }
+    } catch (err) {
+      console.error('Faucet Circle payment failed (crediting anyway):', err);
+    }
+  }
+
+  const result = claimFaucet(handle, txRef ?? undefined);
+  if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+
+  res.json({
+    ok: true,
+    amount_usdc: 1.0,
+    new_balance: result.balance,
+    arc_address: profile.arc_address,
+    tx_ref: txRef,
+    tx_url: txUrl,
+    simulated: !txRef,
+  });
 });
 
 // ── Match ─────────────────────────────────────────────────────────────────────

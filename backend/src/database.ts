@@ -142,7 +142,7 @@ export function getUsdcBalance(handle: string): number {
   return row ? (row.usdc_balance ?? 0) : 0;
 }
 
-export function claimFaucet(handle: string): { ok: boolean; balance?: number; error?: string } {
+export function claimFaucet(handle: string, tx_ref?: string): { ok: boolean; balance?: number; error?: string } {
   const profile = getProfile(handle);
   if (!profile) return { ok: false, error: 'Profile not found' };
   if (profile.faucet_claimed) return { ok: false, error: 'Already claimed 1 USDC faucet' };
