@@ -38,10 +38,11 @@ export async function uploadDealRecord(record: DealRecord): Promise<StorageResul
     const [tx, err] = await indexer.upload(memData, EVM_RPC, signer);
     if (err !== null) throw new Error(String(err));
 
-    return {
-      root_hash: tx.rootHash,
-      tx_hash:   tx.txHash,
-    };
+    // tx is either single-file { rootHash, txHash } or multi-file { rootHashes, txHashes }
+    const rootHash = 'rootHash' in tx ? tx.rootHash : tx.rootHashes[0];
+    const txHash   = 'txHash'   in tx ? tx.txHash   : tx.txHashes[0];
+
+    return { root_hash: rootHash, tx_hash: txHash };
   } catch (err) {
     console.error('0G upload failed:', err);
     return null;
