@@ -13,7 +13,7 @@ import {
 } from './database.js';
 import { getTopMatches } from './matching.js';
 import { runConversation } from './conversation.js';
-import { processPayment, requirePayment, getGatewayMiddleware, getBuyerClient, MAX_DEAL_USDC } from './payment.js';
+import { processPayment, requirePayment, getGatewayMiddleware, getBuyerClient, sendArcUSDC, MAX_DEAL_USDC } from './payment.js';
 import { uploadDealRecord } from './storage.js';
 
 const app = express();
@@ -159,8 +159,8 @@ app.get('/gateway-balance', async (_req, res) => {
 });
 
 // ── Faucet ────────────────────────────────────────────────────────────────────
-// Makes a real Circle Gateway payment of $1.00 USDC (no Arc ETH needed).
-// Credits the tracked balance in DB and returns the Circle txRef.
+// Direct on-chain USDC transfer from BUYER wallet → user's arc_address.
+// BUYER has 38 ETH + 38 USDC on Arc testnet, so no gas issues.
 
 app.post('/faucet', async (req, res) => {
   const { handle } = req.body as { handle: string };
@@ -168,45 +168,24 @@ app.post('/faucet', async (req, res) => {
 
   const profile = getProfile(handle);
   if (!profile) { res.status(404).json({ error: `${handle} not found` }); return; }
+  if (!profile.arc_address) { res.status(400).json({ error: 'No Arc wallet on this profile' }); return; }
+  if (profile.faucet_claimed) { res.status(400).json({ error: 'Already claimed 1 USDC faucet' }); return; }
 
-  // Check claimed before making payment
-  if (profile.faucet_claimed) {
-    res.status(400).json({ error: 'Already claimed 1 USDC faucet' }); return;
+  try {
+    const result = await sendArcUSDC(profile.arc_address, 1.0);
+    claimFaucet(handle);
+    res.json({
+      ok: true,
+      amount_usdc: 1.0,
+      arc_address: profile.arc_address,
+      tx_hash: result.tx_hash,
+      tx_url: `https://testnet.arcscan.app/tx/${result.tx_hash}`,
+      simulated: false,
+    });
+  } catch (err) {
+    console.error('Faucet transfer failed:', err);
+    res.status(500).json({ error: String(err) });
   }
-
-  let txRef: string | null = null;
-  let txUrl: string | null = null;
-
-  // Try real Circle Gateway payment ($1.00 from BUYER → SELLER)
-  if (process.env.BUYER_PRIVATE_KEY && process.env.SELLER_ADDRESS) {
-    try {
-      const client = getBuyerClient();
-      const url    = `${process.env.API_BASE_URL ?? 'https://agentexpo-production.up.railway.app'}/service/data-query?amount=1.0000`;
-      const resp   = await client.pay(url);
-      txRef = resp.transaction || null;
-      if (txRef) {
-        txUrl = txRef.startsWith('0x')
-          ? `https://testnet.arcscan.app/tx/${txRef}`
-          : `https://gateway-api-testnet.circle.com/payments/${txRef}`;
-        console.log(`Faucet real payment: ${txRef}`);
-      }
-    } catch (err) {
-      console.error('Faucet Circle payment failed (crediting anyway):', err);
-    }
-  }
-
-  const result = claimFaucet(handle, txRef ?? undefined);
-  if (!result.ok) { res.status(400).json({ error: result.error }); return; }
-
-  res.json({
-    ok: true,
-    amount_usdc: 1.0,
-    new_balance: result.balance,
-    arc_address: profile.arc_address,
-    tx_ref: txRef,
-    tx_url: txUrl,
-    simulated: !txRef,
-  });
 });
 
 // ── Match ─────────────────────────────────────────────────────────────────────

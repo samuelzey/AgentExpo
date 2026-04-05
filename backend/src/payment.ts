@@ -4,6 +4,36 @@ import type { RequestHandler } from 'express';
 
 export const MAX_DEAL_USDC = 1.0;
 
+// ── Arc testnet direct USDC transfer (no Circle Gateway needed) ───────────────
+const ARC_RPC          = 'https://rpc.testnet.arc.network';
+const ARC_USDC_ADDRESS = '0x3600000000000000000000000000000000000000';
+const USDC_ABI = [
+  'function transfer(address to, uint256 amount) returns (bool)',
+  'function balanceOf(address owner) view returns (uint256)',
+];
+
+export async function sendArcUSDC(
+  toAddress: string,
+  amountUsdc: number
+): Promise<{ tx_hash: string; amount_usdc: number }> {
+  const { ethers } = await import('ethers');
+  const privateKey = process.env.BUYER_PRIVATE_KEY;
+  if (!privateKey) throw new Error('BUYER_PRIVATE_KEY not set');
+
+  const capped    = Math.min(amountUsdc, MAX_DEAL_USDC);
+  const amountRaw = BigInt(Math.round(capped * 1e6));
+
+  const provider = new ethers.JsonRpcProvider(ARC_RPC);
+  const wallet   = new ethers.Wallet(privateKey, provider);
+  const usdc     = new ethers.Contract(ARC_USDC_ADDRESS, USDC_ABI, wallet);
+
+  console.log(`sendArcUSDC: ${capped} USDC → ${toAddress}`);
+  const tx      = await usdc.transfer(toAddress, amountRaw);
+  const receipt = await tx.wait();
+  console.log(`sendArcUSDC done: ${receipt.hash}`);
+  return { tx_hash: receipt.hash, amount_usdc: capped };
+}
+
 // ── Seller middleware ─────────────────────────────────────────────────────────
 
 let _gatewayMiddleware: ReturnType<typeof createGatewayMiddleware> | null = null;
