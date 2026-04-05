@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 config({ path: join(dirname(fileURLToPath(import.meta.url)), '../../.env') });
 import express from 'express';
 import { randomBytes } from 'crypto';
-import { ethers } from 'ethers';
 import {
   createProfile, getProfile, getAllProfiles,
   createSponsor, getSponsor, getAllSponsors, getProfilesBySponsor,
@@ -105,7 +104,7 @@ app.get('/sponsors/:slug/members', (req, res) => {
 
 // ── Register ─────────────────────────────────────────────────────────────────
 
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
   const { handle_slug, profile_text, goals, sponsor_slug } = req.body as {
     handle_slug: string; profile_text: string; goals: string; sponsor_slug?: string;
   };
@@ -114,6 +113,7 @@ app.post('/register', (req, res) => {
     return;
   }
   const handle = `@${handle_slug}-${randomBytes(3).toString('hex')}`;
+  const { ethers } = await import('ethers');
   const arcWallet = ethers.Wallet.createRandom();
   try {
     const profile = createProfile(handle, profile_text, goals, sponsor_slug, arcWallet.address);
