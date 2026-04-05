@@ -31,7 +31,8 @@ export async function uploadDealRecord(record: DealRecord): Promise<StorageResul
     const bytes = new TextEncoder().encode(json);
     const memData = new MemData(bytes);
 
-    const signer = new ethers.Wallet(privateKey);
+    const provider = new ethers.JsonRpcProvider(EVM_RPC);
+    const signer = new ethers.Wallet(privateKey, provider);
     const indexer = new Indexer(INDEXER_URL);
 
     const [tx, err] = await indexer.upload(memData, EVM_RPC, signer);
