@@ -8,6 +8,7 @@ import { ethers } from 'ethers';
 import {
   createProfile, getProfile, getAllProfiles,
   createSponsor, getSponsor, getAllSponsors, getProfilesBySponsor,
+  setSponsorLogo,
   saveConversation, getConversationsFor
 } from './database.js';
 import { getTopMatches } from './matching.js';
@@ -25,6 +26,9 @@ app.use((_req, res, next) => {
 
 const PORT = process.env.PORT ?? 8000;
 
+// In-memory active conversations tracker
+const activeConversations = new Set<string>(); // "handleA|handleB"
+
 // ── Health ───────────────────────────────────────────────────────────────────
 
 app.get('/health', (_req, res) => {
@@ -37,6 +41,10 @@ const rootDir = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
 app.get('/', (_req, res) => {
   res.sendFile(join(rootDir, 'app.html'));
+});
+
+app.get('/floor', (_req, res) => {
+  res.sendFile(join(rootDir, 'floor.html'));
 });
 
 app.get('/ethcc', (_req, res) => {
@@ -77,6 +85,17 @@ app.post('/register-sponsor', (req, res) => {
   }
 });
 
+app.post('/sponsors/:slug/logo', (req, res) => {
+  const sponsor = getSponsor(req.params.slug);
+  if (!sponsor) { res.status(404).json({ error: 'Sponsor not found' }); return; }
+  const { logo_data } = req.body as { logo_data: string };
+  if (!logo_data?.startsWith('data:image/')) {
+    res.status(400).json({ error: 'logo_data must be a base64 data URL' }); return;
+  }
+  setSponsorLogo(req.params.slug, logo_data);
+  res.json({ ok: true });
+});
+
 app.get('/sponsors/:slug/members', (req, res) => {
   const sponsor = getSponsor(req.params.slug);
   if (!sponsor) { res.status(404).json({ error: 'Sponsor not found' }); return; }
@@ -102,6 +121,27 @@ app.post('/register', (req, res) => {
   } catch {
     res.status(400).json({ error: 'Handle already exists' });
   }
+});
+
+// ── Floor data ────────────────────────────────────────────────────────────────
+
+app.get('/api/floor', (_req, res) => {
+  const agents = getAllProfiles().map(p => ({
+    handle: p.handle,
+    initials: p.handle.replace('@','').slice(0,2).toUpperCase(),
+    sponsor_slug: p.sponsor_slug,
+    arc_address: p.arc_address,
+  }));
+  const sponsors = getAllSponsors().map(s => ({
+    slug: s.slug,
+    name: s.name,
+    logo_data: s.logo_data,
+  }));
+  const active = Array.from(activeConversations).map(key => {
+    const [a, b] = key.split('|');
+    return { agent_a: a, agent_b: b };
+  });
+  res.json({ agents, sponsors, active_conversations: active });
 });
 
 // ── Gateway balance ───────────────────────────────────────────────────────────
@@ -145,6 +185,9 @@ app.post('/converse', async (req, res) => {
 
   res.setHeader('Content-Type', 'application/x-ndjson');
   res.setHeader('Transfer-Encoding', 'chunked');
+
+  const convKey = `${agent_a_handle}|${agent_b_handle}`;
+  activeConversations.add(convKey);
 
   try {
     // Snapshot balance before conversation
@@ -208,6 +251,8 @@ app.post('/converse', async (req, res) => {
   } catch (err) {
     console.error('Converse error:', err);
     res.write(JSON.stringify({ type: 'error', payload: { message: String(err) } }) + '\n');
+  } finally {
+    activeConversations.delete(convKey);
   }
 
   res.end();

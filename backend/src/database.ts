@@ -11,6 +11,7 @@ db.exec(`
     slug TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
+    logo_data TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -43,13 +44,19 @@ try { db.exec('ALTER TABLE profiles ADD COLUMN sponsor_slug TEXT REFERENCES spon
 try { db.exec('ALTER TABLE profiles ADD COLUMN arc_address TEXT'); } catch {}
 try { db.exec('ALTER TABLE conversations ADD COLUMN zg_root_hash TEXT'); } catch {}
 try { db.exec('ALTER TABLE conversations ADD COLUMN zg_tx_hash TEXT'); } catch {}
+try { db.exec('ALTER TABLE sponsors ADD COLUMN logo_data TEXT'); } catch {}
 
 export interface Sponsor {
   id: number;
   slug: string;
   name: string;
   description: string;
+  logo_data: string | null;
   created_at: string;
+}
+
+export function setSponsorLogo(slug: string, logo_data: string): void {
+  db.prepare('UPDATE sponsors SET logo_data = ? WHERE slug = ?').run(logo_data, slug);
 }
 
 export interface Profile {
