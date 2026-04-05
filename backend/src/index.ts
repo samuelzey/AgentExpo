@@ -8,11 +8,12 @@ import {
   createProfile, getProfile, getAllProfiles,
   createSponsor, getSponsor, getAllSponsors, getProfilesBySponsor,
   setSponsorLogo,
-  saveConversation, getConversationsFor
+  saveConversation, getConversationsFor,
+  claimFaucet, getUsdcBalance, adjustUsdcBalance,
 } from './database.js';
 import { getTopMatches } from './matching.js';
 import { runConversation } from './conversation.js';
-import { processPayment, requirePayment, getBuyerClient, sendArcUSDC, MAX_DEAL_USDC } from './payment.js';
+import { processPayment, requirePayment, requireDynamicPayment, getBuyerClient, MAX_DEAL_USDC } from './payment.js';
 import { uploadDealRecord } from './storage.js';
 
 const app = express();
@@ -28,8 +29,6 @@ const PORT = process.env.PORT ?? 8000;
 // In-memory active conversations tracker
 const activeConversations = new Set<string>(); // "handleA|handleB"
 
-// Faucet claims (1 USDC per handle, resets on server restart — fine for hackathon)
-const faucetClaimed = new Set<string>();
 
 // ── Health ───────────────────────────────────────────────────────────────────
 
@@ -120,7 +119,7 @@ app.post('/register', async (req, res) => {
   const arcWallet = ethers.Wallet.createRandom();
   try {
     const profile = createProfile(handle, profile_text, goals, sponsor_slug, arcWallet.address);
-    res.json({ handle, profile_id: profile.id, sponsor_slug: profile.sponsor_slug, arc_address: arcWallet.address });
+    res.json({ handle, profile_id: profile.id, sponsor_slug: profile.sponsor_slug, arc_address: arcWallet.address, usdc_balance: 0 });
   } catch {
     res.status(400).json({ error: 'Handle already exists' });
   }
@@ -160,32 +159,20 @@ app.get('/gateway-balance', async (_req, res) => {
 });
 
 // ── Faucet ────────────────────────────────────────────────────────────────────
+// Credits 1 USDC to the agent's tracked balance in the DB — no ETH for gas needed.
 
-app.post('/faucet', async (req, res) => {
+app.post('/faucet', (req, res) => {
   const { handle } = req.body as { handle: string };
   if (!handle) { res.status(400).json({ error: 'handle is required' }); return; }
 
   const profile = getProfile(handle);
   if (!profile) { res.status(404).json({ error: `${handle} not found` }); return; }
-  if (!profile.arc_address) { res.status(400).json({ error: 'Profile has no Arc wallet' }); return; }
-  if (faucetClaimed.has(handle)) {
-    res.status(400).json({ error: 'Already claimed 1 USDC for this session' }); return;
-  }
 
-  try {
-    const result = await sendArcUSDC(profile.arc_address, 1.0);
-    faucetClaimed.add(handle);
-    res.json({
-      ok: true,
-      amount_usdc: 1.0,
-      arc_address: profile.arc_address,
-      tx_hash: result.tx_hash,
-      arc_explorer_url: `https://testnet.arcscan.app/tx/${result.tx_hash}`,
-    });
-  } catch (err) {
-    console.error('Faucet error:', err);
-    res.status(500).json({ error: String(err) });
+  const result = claimFaucet(handle);
+  if (!result.ok) {
+    res.status(400).json({ error: result.error }); return;
   }
+  res.json({ ok: true, amount_usdc: 1.0, new_balance: result.balance, arc_address: profile.arc_address });
 });
 
 // ── Match ─────────────────────────────────────────────────────────────────────
@@ -241,9 +228,12 @@ app.post('/converse', async (req, res) => {
       const amount  = Math.min(dealAmount, MAX_DEAL_USDC);
       const payment = await processPayment(
         agent_a_handle, agent_b_handle, amount,
-        profileB.arc_address ?? undefined  // pay directly to seller's Arc wallet
+        profileB.arc_address ?? undefined  // routes Circle Gateway payment to seller's Arc wallet
       );
       arcTxHash = payment.arc_tx_hash;
+      // Update tracked USDC balances
+      adjustUsdcBalance(agent_a_handle, -amount);
+      adjustUsdcBalance(agent_b_handle, +amount);
       res.write(JSON.stringify({ type: 'payment', payload: { ...payment, deal_amount_usdc: amount } }) + '\n');
     }
 
@@ -301,6 +291,22 @@ app.get('/service/data-query', requirePayment('$0.005'), (req, res) => {
     data: 'DeFi on-chain analytics — 30d volume, TVL, wallet cohorts',
     paid_by: (req as any).payment?.payer ?? 'unknown',
     timestamp: new Date().toISOString(),
+  });
+});
+
+// ── Dynamic deal-payment endpoint (routes Circle Gateway funds to individual seller) ──
+// Circle's EIP-712 batching means buyer doesn't need ETH for gas.
+app.get('/service/deal-payment', (req, res, next) => {
+  const amount = Math.min(parseFloat(req.query.amount as string) || 0.10, MAX_DEAL_USDC);
+  const to     = (req.query.to as string) || process.env.SELLER_ADDRESS;
+  if (!to) { res.status(400).json({ error: 'to address required' }); return; }
+
+  const payFn = requireDynamicPayment(to, amount);
+  payFn(req, res, (err?: unknown) => {
+    if (err) { next(err); return; }
+    if (!res.headersSent) {
+      res.json({ ok: true, amount, to });
+    }
   });
 });
 

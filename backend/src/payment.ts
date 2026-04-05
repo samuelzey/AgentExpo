@@ -1,48 +1,8 @@
 import { GatewayClient } from '@circle-fin/x402-batching/client';
 import { createGatewayMiddleware } from '@circle-fin/x402-batching/server';
-import type { RequestHandler } from 'express';
+import type { RequestHandler, Request, Response, NextFunction } from 'express';
 
-// ── Arc testnet USDC ──────────────────────────────────────────────────────────
-
-const ARC_RPC          = 'https://rpc.testnet.arc.network';
-const ARC_USDC_ADDRESS = '0x3600000000000000000000000000000000000000';
-const USDC_ABI = [
-  'function transfer(address to, uint256 amount) returns (bool)',
-  'function balanceOf(address owner) view returns (uint256)',
-];
-const USDC_DECIMALS = 6;
 export const MAX_DEAL_USDC = 1.0;
-
-/**
- * Send USDC directly on-chain (Arc testnet) from the BUYER_PRIVATE_KEY wallet.
- * Amount is capped at MAX_DEAL_USDC.
- */
-export async function sendArcUSDC(
-  toAddress: string,
-  amountUsdc: number
-): Promise<{ tx_hash: string; amount_usdc: number }> {
-  const { ethers } = await import('ethers');
-  const privateKey = process.env.BUYER_PRIVATE_KEY;
-  if (!privateKey) throw new Error('BUYER_PRIVATE_KEY not set');
-
-  const capped     = Math.min(amountUsdc, MAX_DEAL_USDC);
-  const amountRaw  = BigInt(Math.round(capped * 10 ** USDC_DECIMALS));
-
-  const provider = new ethers.JsonRpcProvider(ARC_RPC);
-  const wallet   = new ethers.Wallet(privateKey, provider);
-  const usdc     = new ethers.Contract(ARC_USDC_ADDRESS, USDC_ABI, wallet);
-
-  // Log pre-transfer balance
-  try {
-    const bal = await usdc.balanceOf(wallet.address);
-    console.log(`Arc USDC balance: ${(Number(bal) / 1e6).toFixed(6)} USDC  (sending ${capped} to ${toAddress})`);
-  } catch {}
-
-  const tx      = await usdc.transfer(toAddress, amountRaw);
-  const receipt = await tx.wait();
-  console.log(`Arc USDC sent: ${receipt.hash}`);
-  return { tx_hash: receipt.hash, amount_usdc: capped };
-}
 
 // ── Seller middleware ────────────────────────────────────────────────────────
 
@@ -57,7 +17,7 @@ export function getGatewayMiddleware() {
   return _gatewayMiddleware;
 }
 
-/** Express middleware: require $0.005 USDC to access a route */
+/** Express middleware: require fixed amount to access a route (for /service/data-query demo) */
 export function requirePayment(amount = '$0.005'): RequestHandler {
   if (!process.env.SELLER_ADDRESS) {
     return (_req, _res, next) => next();
@@ -65,7 +25,17 @@ export function requirePayment(amount = '$0.005'): RequestHandler {
   return getGatewayMiddleware().require(amount) as RequestHandler;
 }
 
-// ── Buyer client (Circle Gateway) ────────────────────────────────────────────
+/**
+ * Express middleware factory: require a dynamic amount payable to a specific address.
+ * Used by /service/deal-payment to route funds to individual seller Arc wallets.
+ */
+export function requireDynamicPayment(sellerAddress: string, amount: number): RequestHandler {
+  const capped = Math.min(amount, MAX_DEAL_USDC);
+  const mw = createGatewayMiddleware({ sellerAddress: sellerAddress as `0x${string}` });
+  return mw.require(`$${capped.toFixed(4)}`) as RequestHandler;
+}
+
+// ── Buyer client ─────────────────────────────────────────────────────────────
 
 let _buyerClient: GatewayClient | null = null;
 
@@ -80,6 +50,8 @@ export function getBuyerClient(): GatewayClient {
 
 // ── Payment flow ─────────────────────────────────────────────────────────────
 
+const API_BASE = process.env.API_BASE_URL ?? 'https://agentexpo-production.up.railway.app';
+
 export async function processPayment(
   buyerHandle: string,
   sellerHandle: string,
@@ -87,44 +59,31 @@ export async function processPayment(
   sellerArcAddress?: string
 ): Promise<{ arc_tx_hash: string; arc_explorer_url: string; amount_usdc: number; simulated: boolean }> {
 
-  // Hard cap
   const capped = Math.min(amountUsdc, MAX_DEAL_USDC);
 
   if (!process.env.BUYER_PRIVATE_KEY) {
     return simulatePayment(buyerHandle, sellerHandle, capped);
   }
 
-  // Preferred: direct on-chain USDC transfer to seller's Arc wallet
-  if (sellerArcAddress) {
-    try {
-      const result = await sendArcUSDC(sellerArcAddress, capped);
-      return {
-        arc_tx_hash: result.tx_hash,
-        arc_explorer_url: `https://testnet.arcscan.app/tx/${result.tx_hash}`,
-        amount_usdc: result.amount_usdc,
-        simulated: false,
-      };
-    } catch (err) {
-      console.error('Arc on-chain USDC transfer failed, falling back to simulation:', err);
-      return simulatePayment(buyerHandle, sellerHandle, capped);
-    }
-  }
-
-  // Fallback: x402 Circle Gateway (if no seller arc address)
-  if (!process.env.SELLER_ADDRESS) {
-    return simulatePayment(buyerHandle, sellerHandle, capped);
-  }
   try {
     const client = getBuyerClient();
-    const url    = `${process.env.API_BASE_URL ?? 'https://agentexpo-production.up.railway.app'}/service/data-query`;
+
+    // If we have the seller's Arc address, route payment directly to them
+    // via the dynamic /service/deal-payment endpoint.
+    // Circle Gateway handles EIP-712 signatures — no ETH for gas needed.
+    const url = sellerArcAddress
+      ? `${API_BASE}/service/deal-payment?amount=${capped.toFixed(4)}&to=${encodeURIComponent(sellerArcAddress)}`
+      : `${API_BASE}/service/data-query`;
+
     const response = await client.pay(url);
     const ref = response.transaction;
+
     return {
       arc_tx_hash: ref,
       arc_explorer_url: ref.startsWith('0x')
         ? `https://testnet.arcscan.app/tx/${ref}`
         : `https://gateway-api-testnet.circle.com/payments/${ref}`,
-      amount_usdc: Number(response.formattedAmount),
+      amount_usdc: capped,
       simulated: false,
     };
   } catch (err) {

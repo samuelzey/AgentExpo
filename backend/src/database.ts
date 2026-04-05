@@ -42,6 +42,8 @@ db.exec(`
 // Migrations
 try { db.exec('ALTER TABLE profiles ADD COLUMN sponsor_slug TEXT REFERENCES sponsors(slug)'); } catch {}
 try { db.exec('ALTER TABLE profiles ADD COLUMN arc_address TEXT'); } catch {}
+try { db.exec('ALTER TABLE profiles ADD COLUMN usdc_balance REAL NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE profiles ADD COLUMN faucet_claimed INTEGER NOT NULL DEFAULT 0'); } catch {}
 try { db.exec('ALTER TABLE conversations ADD COLUMN zg_root_hash TEXT'); } catch {}
 try { db.exec('ALTER TABLE conversations ADD COLUMN zg_tx_hash TEXT'); } catch {}
 try { db.exec('ALTER TABLE sponsors ADD COLUMN logo_data TEXT'); } catch {}
@@ -66,6 +68,8 @@ export interface Profile {
   goals: string;
   arc_address: string | null;
   sponsor_slug: string | null;
+  usdc_balance: number;
+  faucet_claimed: number; // 0 or 1
   created_at: string;
 }
 
@@ -129,4 +133,24 @@ export function saveConversation(
 export function getConversationsFor(handle: string): Conversation[] {
   const rows = db.prepare('SELECT * FROM conversations WHERE agent_a = ? OR agent_b = ?').all(handle, handle) as any[];
   return rows.map(r => ({ ...r, messages: JSON.parse(r.messages) }));
+}
+
+// ── USDC balance tracking ─────────────────────────────────────────────────────
+
+export function getUsdcBalance(handle: string): number {
+  const row = db.prepare('SELECT usdc_balance FROM profiles WHERE handle = ?').get(handle) as any;
+  return row ? (row.usdc_balance ?? 0) : 0;
+}
+
+export function claimFaucet(handle: string): { ok: boolean; balance?: number; error?: string } {
+  const profile = getProfile(handle);
+  if (!profile) return { ok: false, error: 'Profile not found' };
+  if (profile.faucet_claimed) return { ok: false, error: 'Already claimed 1 USDC faucet' };
+  db.prepare('UPDATE profiles SET usdc_balance = usdc_balance + 1.0, faucet_claimed = 1 WHERE handle = ?').run(handle);
+  return { ok: true, balance: getUsdcBalance(handle) };
+}
+
+export function adjustUsdcBalance(handle: string, delta: number): number {
+  db.prepare('UPDATE profiles SET usdc_balance = MAX(0, usdc_balance + ?) WHERE handle = ?').run(delta, handle);
+  return getUsdcBalance(handle);
 }
