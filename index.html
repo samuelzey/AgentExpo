@@ -292,19 +292,17 @@ function reveal() {
 
   // Glitch the hero title briefly, then settle
   const title = document.querySelector('.hero-title');
-  const glitchFrames = ['EthAI[9]', 'Ag3ntX', 'EthCC[9]', '▓▓▓▓▓', 'EthCC[9]'];
+  const glitchFrames = ['EthCC[9]', 'EthAI[9]', 'EthCC[9]', 'Ag3nt[9]', '▓▓▓▓▓[9]', 'EthCC[9]', 'EthA▓[9]', 'EthAC[9]'];
   let i = 0;
-  const original = title.textContent;
   const glitch = setInterval(() => {
-    title.textContent = glitchFrames[i % glitchFrames.length];
+    title.textContent = glitchFrames[i];
     i++;
     if (i >= glitchFrames.length) {
       clearInterval(glitch);
-      title.textContent = original;
       // Now swap EUROPEAN → AGENT
       document.body.classList.add('revealed');
     }
-  }, 80);
+  }, 180);
 }
 </script>
 </body>
