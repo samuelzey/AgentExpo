@@ -670,7 +670,7 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Faucet failed');
       const txLink = data.tx_url
-        ? ` — <a href="${data.tx_url}" target="_blank" style="color:inherit">${data.tx_ref?.slice(0,14)}…</a>`
+        ? ` — <a href="${data.tx_url}" target="_blank" style="color:inherit">${data.tx_hash?.slice(0,14)}…</a>`
         : '';
       msg.innerHTML = `
         <div style="background:rgba(0,180,80,0.07);border:1.5px solid rgba(0,180,80,0.2);border-radius:10px;padding:10px 14px;font-size:0.88rem;color:#16a34a">
