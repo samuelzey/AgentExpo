@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 config({ path: join(dirname(fileURLToPath(import.meta.url)), '../../.env') });
 import express from 'express';
 import { randomBytes } from 'crypto';
+import { ethers } from 'ethers';
 import {
   createProfile, getProfile, getAllProfiles,
   createSponsor, getSponsor, getAllSponsors, getProfilesBySponsor,
@@ -11,7 +12,7 @@ import {
 } from './database.js';
 import { getTopMatches } from './matching.js';
 import { runConversation } from './conversation.js';
-import { processPayment, requirePayment } from './payment.js';
+import { processPayment, requirePayment, getBuyerClient } from './payment.js';
 import { uploadDealRecord } from './storage.js';
 
 const app = express();
@@ -94,11 +95,24 @@ app.post('/register', (req, res) => {
     return;
   }
   const handle = `@${handle_slug}-${randomBytes(3).toString('hex')}`;
+  const arcWallet = ethers.Wallet.createRandom();
   try {
-    const profile = createProfile(handle, profile_text, goals, sponsor_slug);
-    res.json({ handle, profile_id: profile.id, sponsor_slug: profile.sponsor_slug });
+    const profile = createProfile(handle, profile_text, goals, sponsor_slug, arcWallet.address);
+    res.json({ handle, profile_id: profile.id, sponsor_slug: profile.sponsor_slug, arc_address: arcWallet.address });
   } catch {
     res.status(400).json({ error: 'Handle already exists' });
+  }
+});
+
+// ── Gateway balance ───────────────────────────────────────────────────────────
+
+app.get('/gateway-balance', async (_req, res) => {
+  try {
+    const client = getBuyerClient();
+    const balances = await client.getBalances();
+    res.json({ usdc: balances.gateway.formattedAvailable });
+  } catch (err) {
+    res.json({ usdc: null, error: String(err) });
   }
 });
 
@@ -133,6 +147,14 @@ app.post('/converse', async (req, res) => {
   res.setHeader('Transfer-Encoding', 'chunked');
 
   try {
+    // Snapshot balance before conversation
+    let balanceBefore: string | null = null;
+    try {
+      const client = getBuyerClient();
+      const b = await client.getBalances();
+      balanceBefore = b.gateway.formattedAvailable;
+    } catch {}
+
     const { messages, outcome, dealAmount } = await runConversation(profileA, profileB);
 
     for (const msg of messages) {
@@ -166,8 +188,23 @@ app.post('/converse', async (req, res) => {
       }
     }
 
+    // Snapshot balance after deal
+    let balanceAfter: string | null = null;
+    if (outcome === 'deal') {
+      try {
+        const client = getBuyerClient();
+        const b = await client.getBalances();
+        balanceAfter = b.gateway.formattedAvailable;
+      } catch {}
+    }
+
     saveConversation(agent_a_handle, agent_b_handle, messages, outcome, dealAmount ?? undefined, arcTxHash, zgRootHash, zgTxHash);
-    res.write(JSON.stringify({ type: 'outcome', payload: { outcome, deal_amount_usdc: dealAmount, arc_tx_hash: arcTxHash, zg_root_hash: zgRootHash, zg_tx_hash: zgTxHash } }) + '\n');
+    res.write(JSON.stringify({ type: 'outcome', payload: {
+      outcome, deal_amount_usdc: dealAmount, arc_tx_hash: arcTxHash,
+      zg_root_hash: zgRootHash, zg_tx_hash: zgTxHash,
+      balance_before: balanceBefore, balance_after: balanceAfter,
+      buyer_arc_address: profileA.arc_address, seller_arc_address: profileB.arc_address,
+    }}) + '\n');
   } catch (err) {
     console.error('Converse error:', err);
     res.write(JSON.stringify({ type: 'error', payload: { message: String(err) } }) + '\n');

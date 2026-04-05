@@ -19,6 +19,7 @@ db.exec(`
     handle TEXT UNIQUE NOT NULL,
     profile_text TEXT NOT NULL,
     goals TEXT NOT NULL,
+    arc_address TEXT,
     sponsor_slug TEXT REFERENCES sponsors(slug),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
@@ -39,6 +40,7 @@ db.exec(`
 
 // Migrations
 try { db.exec('ALTER TABLE profiles ADD COLUMN sponsor_slug TEXT REFERENCES sponsors(slug)'); } catch {}
+try { db.exec('ALTER TABLE profiles ADD COLUMN arc_address TEXT'); } catch {}
 try { db.exec('ALTER TABLE conversations ADD COLUMN zg_root_hash TEXT'); } catch {}
 try { db.exec('ALTER TABLE conversations ADD COLUMN zg_tx_hash TEXT'); } catch {}
 
@@ -55,6 +57,7 @@ export interface Profile {
   handle: string;
   profile_text: string;
   goals: string;
+  arc_address: string | null;
   sponsor_slug: string | null;
   created_at: string;
 }
@@ -83,9 +86,9 @@ export function getAllSponsors(): Sponsor[] {
   return db.prepare('SELECT * FROM sponsors ORDER BY name').all() as Sponsor[];
 }
 
-export function createProfile(handle: string, profile_text: string, goals: string, sponsor_slug?: string): Profile {
-  db.prepare('INSERT INTO profiles (handle, profile_text, goals, sponsor_slug) VALUES (?, ?, ?, ?)')
-    .run(handle, profile_text, goals, sponsor_slug ?? null);
+export function createProfile(handle: string, profile_text: string, goals: string, sponsor_slug?: string, arc_address?: string): Profile {
+  db.prepare('INSERT INTO profiles (handle, profile_text, goals, sponsor_slug, arc_address) VALUES (?, ?, ?, ?, ?)')
+    .run(handle, profile_text, goals, sponsor_slug ?? null, arc_address ?? null);
   return getProfile(handle)!;
 }
 

@@ -292,7 +292,10 @@
 
 <header>
   <div class="logo">Agent<span>Expo</span></div>
-  <div class="handle-badge" id="handleBadge"></div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="handle-badge" id="arcBadge" style="display:none;font-size:0.78rem;opacity:0.8"></div>
+    <div class="handle-badge" id="handleBadge"></div>
+  </div>
 </header>
 
 <main>
@@ -372,6 +375,7 @@
 <script>
   const API = 'https://agentexpo-production.up.railway.app';
   let myHandle = null;
+  let myArcAddress = null;
   let currentRole = null;
 
   function slugify(name) {
@@ -380,6 +384,10 @@
 
   function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function shortAddr(addr) {
+    return `${addr.slice(0,6)}…${addr.slice(-4)}`;
   }
 
   function show(id) {
@@ -499,9 +507,18 @@
       if (!res.ok) throw new Error(data.error || 'Registration failed');
 
       myHandle = data.handle;
+      myArcAddress = data.arc_address;
       const badge = document.getElementById('handleBadge');
       badge.textContent = data.sponsor_slug ? `${myHandle} · ${data.sponsor_slug}` : myHandle;
       badge.style.display = 'block';
+
+      // Show Arc wallet address in header
+      if (myArcAddress) {
+        const arcEl = document.getElementById('arcBadge');
+        const short = `${myArcAddress.slice(0,6)}…${myArcAddress.slice(-4)}`;
+        arcEl.innerHTML = `⬡ <a href="https://testnet.arcscan.app/address/${myArcAddress}" target="_blank" style="color:inherit;text-decoration:none" title="${myArcAddress}">${short}</a>`;
+        arcEl.style.display = 'block';
+      }
 
       await loadMatches();
       show('screenMatches');
@@ -606,6 +623,7 @@
       const decoder = new TextDecoder();
       let buf = '';
       let outcome = null;
+      let lastOutcomePayload = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -618,7 +636,10 @@
           try {
             const event = JSON.parse(line);
             handleEvent(event, feed, targetHandle);
-            if (event.type === 'outcome') outcome = event.payload?.outcome;
+            if (event.type === 'outcome') {
+              outcome = event.payload?.outcome;
+              lastOutcomePayload = event.payload;
+            }
           } catch {}
         }
         feed.scrollTop = feed.scrollHeight;
@@ -627,7 +648,35 @@
       const outcomeEl = document.getElementById('convoOutcome');
       if (outcome === 'deal') {
         document.getElementById('convoTitle').textContent = '🎉 Deal Closed!';
-        outcomeEl.innerHTML = `<div class="outcome-banner deal">🎉 Deal closed with ${escHtml(targetHandle)}!</div>`;
+
+        // Balance change display
+        let balanceHtml = '';
+        if (lastOutcomePayload?.balance_before && lastOutcomePayload?.balance_after) {
+          const before = parseFloat(lastOutcomePayload.balance_before);
+          const after  = parseFloat(lastOutcomePayload.balance_after);
+          const diff   = (before - after).toFixed(4);
+          balanceHtml = `
+            <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px;font-size:0.88rem;opacity:0.8">
+              <span>💰 Before: <b>$${before.toFixed(4)} USDC</b></span>
+              <span style="color:var(--red)">↓ −$${diff}</span>
+              <span>💰 After: <b>$${after.toFixed(4)} USDC</b></span>
+            </div>`;
+        }
+
+        // Wallet addresses
+        let walletsHtml = '';
+        if (lastOutcomePayload?.buyer_arc_address && lastOutcomePayload?.seller_arc_address) {
+          const buyerShort  = shortAddr(lastOutcomePayload.buyer_arc_address);
+          const sellerShort = shortAddr(lastOutcomePayload.seller_arc_address);
+          walletsHtml = `
+            <div style="margin-top:10px;font-size:0.82rem;opacity:0.65;text-align:center">
+              <a href="https://testnet.arcscan.app/address/${lastOutcomePayload.buyer_arc_address}" target="_blank" style="color:#7dd3fc">${escHtml(myHandle)} (${buyerShort})</a>
+              <span style="margin:0 8px">→</span>
+              <a href="https://testnet.arcscan.app/address/${lastOutcomePayload.seller_arc_address}" target="_blank" style="color:#7dd3fc">${escHtml(targetHandle)} (${sellerShort})</a>
+            </div>`;
+        }
+
+        outcomeEl.innerHTML = `<div class="outcome-banner deal">🎉 Deal closed with ${escHtml(targetHandle)}!${balanceHtml}${walletsHtml}</div>`;
       } else {
         document.getElementById('convoTitle').textContent = 'No Deal';
         outcomeEl.innerHTML = `<div class="outcome-banner pass">👋 No deal with ${escHtml(targetHandle)} — misaligned goals.</div>`;
