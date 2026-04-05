@@ -31,14 +31,16 @@ db.exec(`
     outcome TEXT,
     deal_amount_usdc REAL,
     arc_tx_hash TEXT,
+    zg_root_hash TEXT,
+    zg_tx_hash TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
-// Migrate: add sponsor_slug to profiles if it doesn't exist yet
-try {
-  db.exec('ALTER TABLE profiles ADD COLUMN sponsor_slug TEXT REFERENCES sponsors(slug)');
-} catch { /* column already exists */ }
+// Migrations
+try { db.exec('ALTER TABLE profiles ADD COLUMN sponsor_slug TEXT REFERENCES sponsors(slug)'); } catch {}
+try { db.exec('ALTER TABLE conversations ADD COLUMN zg_root_hash TEXT'); } catch {}
+try { db.exec('ALTER TABLE conversations ADD COLUMN zg_tx_hash TEXT'); } catch {}
 
 export interface Sponsor {
   id: number;
@@ -102,12 +104,15 @@ export function getProfilesBySponsor(sponsor_slug: string): Profile[] {
 export function saveConversation(
   agent_a: string, agent_b: string,
   messages: object[], outcome: string,
-  deal_amount_usdc?: number, arc_tx_hash?: string
+  deal_amount_usdc?: number, arc_tx_hash?: string,
+  zg_root_hash?: string, zg_tx_hash?: string
 ): number {
   const result = db.prepare(`
-    INSERT INTO conversations (agent_a, agent_b, messages, outcome, deal_amount_usdc, arc_tx_hash)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(agent_a, agent_b, JSON.stringify(messages), outcome, deal_amount_usdc ?? null, arc_tx_hash ?? null);
+    INSERT INTO conversations (agent_a, agent_b, messages, outcome, deal_amount_usdc, arc_tx_hash, zg_root_hash, zg_tx_hash)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(agent_a, agent_b, JSON.stringify(messages), outcome,
+    deal_amount_usdc ?? null, arc_tx_hash ?? null,
+    zg_root_hash ?? null, zg_tx_hash ?? null);
   return result.lastInsertRowid as number;
 }
 

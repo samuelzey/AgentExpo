@@ -12,6 +12,7 @@ import {
 import { getTopMatches } from './matching.js';
 import { runConversation } from './conversation.js';
 import { processPayment, requirePayment } from './payment.js';
+import { uploadDealRecord } from './storage.js';
 
 const app = express();
 app.use(express.json());
@@ -140,15 +141,33 @@ app.post('/converse', async (req, res) => {
 
     let arcTxHash: string | undefined;
     if (outcome === 'deal' && dealAmount) {
-      // x402 demo payment is always $0.005 USDC (the hardcoded service price).
-      // The negotiated dealAmount is stored for record-keeping only.
       const payment = await processPayment(agent_a_handle, agent_b_handle, 0.005);
       arcTxHash = payment.arc_tx_hash;
       res.write(JSON.stringify({ type: 'payment', payload: { ...payment, deal_amount_usdc: dealAmount } }) + '\n');
     }
 
-    saveConversation(agent_a_handle, agent_b_handle, messages, outcome, dealAmount ?? undefined, arcTxHash);
-    res.write(JSON.stringify({ type: 'outcome', payload: { outcome, deal_amount_usdc: dealAmount, arc_tx_hash: arcTxHash } }) + '\n');
+    // Upload deal record to 0G Storage (async, non-blocking for stream)
+    let zgRootHash: string | undefined;
+    let zgTxHash: string | undefined;
+    if (outcome === 'deal') {
+      const zgResult = await uploadDealRecord({
+        agent_a: agent_a_handle,
+        agent_b: agent_b_handle,
+        messages,
+        outcome,
+        deal_amount_usdc: dealAmount ?? null,
+        arc_tx_hash: arcTxHash ?? null,
+        timestamp: new Date().toISOString(),
+      });
+      if (zgResult) {
+        zgRootHash = zgResult.root_hash;
+        zgTxHash   = zgResult.tx_hash;
+        res.write(JSON.stringify({ type: 'storage', payload: { zg_root_hash: zgRootHash, zg_tx_hash: zgTxHash } }) + '\n');
+      }
+    }
+
+    saveConversation(agent_a_handle, agent_b_handle, messages, outcome, dealAmount ?? undefined, arcTxHash, zgRootHash, zgTxHash);
+    res.write(JSON.stringify({ type: 'outcome', payload: { outcome, deal_amount_usdc: dealAmount, arc_tx_hash: arcTxHash, zg_root_hash: zgRootHash, zg_tx_hash: zgTxHash } }) + '\n');
   } catch (err) {
     console.error('Converse error:', err);
     res.write(JSON.stringify({ type: 'error', payload: { message: String(err) } }) + '\n');
@@ -198,6 +217,8 @@ app.get('/recap/:handle', (req, res) => {
       outcome: c.outcome,
       deal_amount_usdc: c.deal_amount_usdc,
       arc_tx_hash: c.arc_tx_hash,
+      zg_root_hash: (c as any).zg_root_hash ?? null,
+      zg_tx_hash: (c as any).zg_tx_hash ?? null,
       message_count: c.messages.length,
     })),
     deals: deals.length,

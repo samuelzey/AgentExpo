@@ -660,6 +660,15 @@
         : `https://gateway-api-testnet.circle.com/payments/${ref}`;
       div.innerHTML = `💸 $${event.payload.amount_usdc} USDC — <a href="${url}" target="_blank" style="color:inherit">${ref.slice(0, 16)}…</a>`;
       feed.appendChild(div);
+    } else if (event.type === 'storage') {
+      const div = document.createElement('div');
+      div.className = 'payment-notice';
+      div.style.borderColor = 'rgba(100,200,255,0.4)';
+      div.style.background = 'rgba(100,200,255,0.08)';
+      div.style.color = '#7dd3fc';
+      const hash = event.payload.zg_root_hash;
+      div.innerHTML = `🗄️ Archived on 0G — Root: <code style="font-size:0.8em">${hash.slice(0,18)}…</code>`;
+      feed.appendChild(div);
     }
   }
 
@@ -682,20 +691,31 @@
         <div class="card" style="padding:0;overflow:hidden">
           ${data.conversations.length === 0
             ? '<div style="padding:1.5rem;opacity:0.5">No conversations yet.</div>'
-            : data.conversations.map(c => `
-              <div class="convo-row">
-                <div class="with">${escHtml(c.with)}</div>
-                <div class="badge ${c.outcome}">${c.outcome}</div>
-                ${c.deal_amount_usdc ? `<div class="amount">$${c.deal_amount_usdc} USDC</div>` : '<div></div>'}
-                ${c.arc_tx_hash ? `<div class="amount" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${c.arc_tx_hash.slice(0,14)}…</div>` : ''}
-              </div>
-            `).join('')
+            : data.conversations.map(c => recapRow(c)).join('')
           }
         </div>
       `;
     } catch (err) {
       el.innerHTML = `<div class="error-msg">⚠️ ${err.message}</div>`;
     }
+  }
+
+  function recapRow(c) {
+    const zgLink = c.zg_root_hash
+      ? `<a href="https://explorer.0g.ai/storage/${c.zg_root_hash}" target="_blank" title="0G Storage archive" style="color:#7dd3fc;font-size:0.8rem;opacity:0.8">🗄️ 0G</a>`
+      : '';
+    const arcRef = c.arc_tx_hash
+      ? `<div class="amount" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${c.arc_tx_hash.slice(0,14)}…</div>`
+      : '';
+    return `
+      <div class="convo-row">
+        <div class="with">${escHtml(c.with)}</div>
+        <div class="badge ${c.outcome}">${c.outcome}</div>
+        ${c.deal_amount_usdc ? `<div class="amount">$${c.deal_amount_usdc} USDC</div>` : '<div></div>'}
+        ${arcRef}
+        ${zgLink}
+      </div>
+    `;
   }
 
   // ── Sponsors list ─────────────────────────────────────────────────────────
