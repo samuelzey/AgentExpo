@@ -13,7 +13,7 @@ import {
 } from './database.js';
 import { getTopMatches } from './matching.js';
 import { runConversation } from './conversation.js';
-import { processPayment, requirePayment, requireDynamicPayment, getBuyerClient, MAX_DEAL_USDC } from './payment.js';
+import { processPayment, requirePayment, getBuyerClient, MAX_DEAL_USDC } from './payment.js';
 import { uploadDealRecord } from './storage.js';
 
 const app = express();
@@ -226,10 +226,7 @@ app.post('/converse', async (req, res) => {
     let arcTxHash: string | undefined;
     if (outcome === 'deal' && dealAmount) {
       const amount  = Math.min(dealAmount, MAX_DEAL_USDC);
-      const payment = await processPayment(
-        agent_a_handle, agent_b_handle, amount,
-        profileB.arc_address ?? undefined  // routes Circle Gateway payment to seller's Arc wallet
-      );
+      const payment = await processPayment(agent_a_handle, agent_b_handle, amount);
       arcTxHash = payment.arc_tx_hash;
       // Update tracked USDC balances
       adjustUsdcBalance(agent_a_handle, -amount);
@@ -294,21 +291,6 @@ app.get('/service/data-query', requirePayment('$0.005'), (req, res) => {
   });
 });
 
-// ── Dynamic deal-payment endpoint (routes Circle Gateway funds to individual seller) ──
-// Circle's EIP-712 batching means buyer doesn't need ETH for gas.
-app.get('/service/deal-payment', (req, res, next) => {
-  const amount = Math.min(parseFloat(req.query.amount as string) || 0.10, MAX_DEAL_USDC);
-  const to     = (req.query.to as string) || process.env.SELLER_ADDRESS;
-  if (!to) { res.status(400).json({ error: 'to address required' }); return; }
-
-  const payFn = requireDynamicPayment(to, amount);
-  payFn(req, res, (err?: unknown) => {
-    if (err) { next(err); return; }
-    if (!res.headersSent) {
-      res.json({ ok: true, amount, to });
-    }
-  });
-});
 
 // ── Pay (direct) ──────────────────────────────────────────────────────────────
 
