@@ -1076,11 +1076,22 @@
 
   function recapRow(c) {
     const zgLink = c.zg_root_hash
-      ? `<a href="https://storagescan-galileo.0g.ai/file/${c.zg_root_hash}" target="_blank" title="0G Storage archive" style="color:#7dd3fc;font-size:0.8rem;opacity:0.8">🗄️ 0G</a>`
-      : '';
+      ? `<a href="https://storagescan-galileo.0g.ai/file/${c.zg_root_hash}" target="_blank"
+            title="View full conversation on 0G Storage"
+            style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,72,184,0.07);border:1px solid rgba(0,72,184,0.18);border-radius:6px;padding:3px 9px;font-size:0.75rem;font-weight:600;color:var(--blue);text-decoration:none;white-space:nowrap"
+         >🗄️ 0G</a>`
+      : '<div></div>';
     const arcRef = c.arc_tx_hash
-      ? `<div class="amount" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${c.arc_tx_hash.slice(0,14)}…</div>`
-      : '';
+      ? (() => {
+          const ref = c.arc_tx_hash;
+          const url = ref.startsWith('0x')
+            ? `https://testnet.arcscan.app/tx/${ref}`
+            : `https://gateway-api-testnet.circle.com/payments/${ref}`;
+          return `<a href="${url}" target="_blank" title="${ref}"
+                     style="font-size:0.75rem;color:var(--sub);font-family:monospace;text-decoration:none;white-space:nowrap"
+                  >${ref.slice(0,10)}…</a>`;
+        })()
+      : '<div></div>';
     return `
       <div class="convo-row">
         <div class="with">${escHtml(c.with)}</div>
