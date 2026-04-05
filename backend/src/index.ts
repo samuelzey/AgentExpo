@@ -12,7 +12,7 @@ import {
 } from './database.js';
 import { getTopMatches } from './matching.js';
 import { runConversation } from './conversation.js';
-import { processPayment, requirePayment, getBuyerClient } from './payment.js';
+import { processPayment, requirePayment, getBuyerClient, sendArcUSDC, MAX_DEAL_USDC } from './payment.js';
 import { uploadDealRecord } from './storage.js';
 
 const app = express();
@@ -27,6 +27,9 @@ const PORT = process.env.PORT ?? 8000;
 
 // In-memory active conversations tracker
 const activeConversations = new Set<string>(); // "handleA|handleB"
+
+// Faucet claims (1 USDC per handle, resets on server restart — fine for hackathon)
+const faucetClaimed = new Set<string>();
 
 // ── Health ───────────────────────────────────────────────────────────────────
 
@@ -156,6 +159,35 @@ app.get('/gateway-balance', async (_req, res) => {
   }
 });
 
+// ── Faucet ────────────────────────────────────────────────────────────────────
+
+app.post('/faucet', async (req, res) => {
+  const { handle } = req.body as { handle: string };
+  if (!handle) { res.status(400).json({ error: 'handle is required' }); return; }
+
+  const profile = getProfile(handle);
+  if (!profile) { res.status(404).json({ error: `${handle} not found` }); return; }
+  if (!profile.arc_address) { res.status(400).json({ error: 'Profile has no Arc wallet' }); return; }
+  if (faucetClaimed.has(handle)) {
+    res.status(400).json({ error: 'Already claimed 1 USDC for this session' }); return;
+  }
+
+  try {
+    const result = await sendArcUSDC(profile.arc_address, 1.0);
+    faucetClaimed.add(handle);
+    res.json({
+      ok: true,
+      amount_usdc: 1.0,
+      arc_address: profile.arc_address,
+      tx_hash: result.tx_hash,
+      arc_explorer_url: `https://testnet.arcscan.app/tx/${result.tx_hash}`,
+    });
+  } catch (err) {
+    console.error('Faucet error:', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 // ── Match ─────────────────────────────────────────────────────────────────────
 
 app.get('/match/:handle', async (req, res) => {
@@ -206,9 +238,13 @@ app.post('/converse', async (req, res) => {
 
     let arcTxHash: string | undefined;
     if (outcome === 'deal' && dealAmount) {
-      const payment = await processPayment(agent_a_handle, agent_b_handle, 0.005);
+      const amount  = Math.min(dealAmount, MAX_DEAL_USDC);
+      const payment = await processPayment(
+        agent_a_handle, agent_b_handle, amount,
+        profileB.arc_address ?? undefined  // pay directly to seller's Arc wallet
+      );
       arcTxHash = payment.arc_tx_hash;
-      res.write(JSON.stringify({ type: 'payment', payload: { ...payment, deal_amount_usdc: dealAmount } }) + '\n');
+      res.write(JSON.stringify({ type: 'payment', payload: { ...payment, deal_amount_usdc: amount } }) + '\n');
     }
 
     // Upload deal record to 0G Storage (async, non-blocking for stream)

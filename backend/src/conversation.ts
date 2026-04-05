@@ -13,18 +13,19 @@ Profile: ${profile.profile_text}
 Goals: ${profile.goals}
 
 Be concise (2-4 sentences per turn). Surface your services, pricing, and needs naturally.
-If you find mutual value, propose a deal explicitly with a USDC amount (e.g. "I propose $0.005 USDC for one data query").
+If you find mutual value, propose a deal explicitly with a USDC amount (e.g. "I propose $0.50 USDC for this service"). Maximum deal size is $1.00 USDC.
 If misaligned, politely end the conversation.
 
 End every message with one of these tags on a new line:
 [CONTINUE] — keep talking
-[DEAL: $X.XXX USDC] — propose or accept a deal
+[DEAL: $X.XX USDC] — propose or accept a deal (max $1.00)
 [PASS] — end, no deal`;
 }
 
 function parseDealAmount(text: string): number {
   const match = text.match(/\[DEAL:\s*\$?([\d.]+)/);
-  return match ? parseFloat(match[1]) : 0.005;
+  const amount = match ? parseFloat(match[1]) : 0.10;
+  return Math.min(amount, 1.0); // hard cap
 }
 
 export interface Message { speaker: string; text: string; }

@@ -93,16 +93,34 @@ Always store the user's `handle` in memory after registration so you can use it 
 
 ---
 
-## 5. Pay (manual)
+## 5. Get USDC (Faucet)
+
+**Trigger**: "get usdc", "fund my wallet", "get testnet usdc", "claim usdc", "faucet", or if the user wants to start dealing but has no balance.
+
+**Flow**:
+1. POST `{base_url}/faucet` with body:
+   ```json
+   { "handle": "{my_handle}" }
+   ```
+2. On success: `💧 **1 USDC** sent to your Arc wallet ([{tx_hash_short}]({arc_explorer_url}))`
+3. On error (already claimed): `⚠️ Already claimed 1 USDC this session.`
+
+Note: one claim per handle per server session.
+
+---
+
+## 6. Pay (manual)
 
 **Trigger**: "pay {handle}", "send payment to {handle}", or after a deal if the user asks.
 
 **Flow**:
 1. POST `{base_url}/pay` with body:
    ```json
-   { "buyer_handle": "{my_handle}", "seller_handle": "{target_handle}", "amount_usdc": 0.005 }
+   { "buyer_handle": "{my_handle}", "seller_handle": "{target_handle}", "amount_usdc": 0.10 }
    ```
-2. Reply: `💸 Payment sent — **$0.005 USDC** — Ref: \`{arc_tx_hash}\``
+2. Reply: `💸 Payment sent — **$X.XX USDC** — Tx: \`{arc_tx_hash}\``
+
+Note: maximum payment is $1.00 USDC.
 
 ---
 
@@ -113,4 +131,6 @@ Always store the user's `handle` in memory after registration so you can use it 
 - If backend is unreachable: "⚠️ AgentExpo backend is offline."
 - Keep message display **concise** — strip `[CONTINUE]`, `[DEAL: ...]`, `[PASS]` tags from agent messages before showing the user.
 - After registration, always remember the handle for the rest of the session.
+- **All payments are capped at $1.00 USDC.** Never attempt or display an amount above $1.00.
+- If the user hasn't claimed their USDC faucet yet, proactively suggest it before their first deal.
 - The demo service endpoint is `{base_url}/service/data-query` — this is the x402-protected seller endpoint used in the payment flow.
