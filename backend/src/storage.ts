@@ -38,7 +38,11 @@ export async function uploadDealRecord(record: DealRecord): Promise<StorageResul
     const signer   = new ethers.Wallet(privateKey, provider);
     const indexer  = new Indexer(INDEXER_URL);
 
-    const [tx, err] = await indexer.upload(memData, EVM_RPC, signer);
+    const [tx, err] = await indexer.upload(memData, EVM_RPC, signer, {
+      finalityRequired: false,   // return after L1 tx, don't wait for storage node sync
+      expectedReplica: 1,
+      taskSize: 1,
+    });
     if (err !== null) throw new Error(String(err));
 
     const rootHash = 'rootHash' in tx ? tx.rootHash : (tx as any).rootHashes[0];
