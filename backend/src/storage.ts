@@ -30,14 +30,30 @@ export async function uploadDealRecord(record: DealRecord): Promise<StorageResul
       import('ethers'),
     ]);
 
+    // Log wallet address and balance before attempting upload
+    const provider = new ethers.JsonRpcProvider(EVM_RPC);
+    const signer   = new ethers.Wallet(privateKey, provider);
+    const address  = await signer.getAddress();
+
+    try {
+      const balanceWei = await provider.getBalance(address);
+      const balanceA0GI = ethers.formatEther(balanceWei);
+      console.log(`0G wallet: ${address}, A0GI balance: ${balanceA0GI}`);
+      if (balanceWei === 0n) {
+        console.error('0G upload skipped: wallet has 0 A0GI — fund it at https://faucet.0g.ai');
+        return null;
+      }
+    } catch (balErr) {
+      console.warn('0G balance check failed:', balErr);
+    }
+
     const json  = JSON.stringify(record, null, 2);
     const bytes = new TextEncoder().encode(json);
     const memData = new MemData(bytes);
 
-    const provider = new ethers.JsonRpcProvider(EVM_RPC);
-    const signer   = new ethers.Wallet(privateKey, provider);
     const indexer  = new Indexer(INDEXER_URL);
 
+    console.log(`0G uploading deal record (${bytes.length} bytes)…`);
     const [tx, err] = await indexer.upload(memData, EVM_RPC, signer, {
       finalityRequired: false,   // return after L1 tx, don't wait for storage node sync
       expectedReplica: 1,
@@ -48,9 +64,10 @@ export async function uploadDealRecord(record: DealRecord): Promise<StorageResul
     const rootHash = 'rootHash' in tx ? tx.rootHash : (tx as any).rootHashes[0];
     const txHash   = 'txHash'   in tx ? tx.txHash   : (tx as any).txHashes[0];
 
+    console.log(`0G upload success — rootHash: ${rootHash}, txHash: ${txHash}`);
     return { root_hash: rootHash, tx_hash: txHash };
   } catch (err) {
-    console.error('0G upload failed:', err);
+    console.error('0G upload failed:', String(err));
     return null;
   }
 }
