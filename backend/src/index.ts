@@ -13,7 +13,7 @@ import {
 } from './database.js';
 import { getTopMatches } from './matching.js';
 import { runConversation } from './conversation.js';
-import { processPayment, requirePayment, getBuyerClient, MAX_DEAL_USDC } from './payment.js';
+import { processPayment, requirePayment, getGatewayMiddleware, getBuyerClient, MAX_DEAL_USDC } from './payment.js';
 import { uploadDealRecord } from './storage.js';
 
 const app = express();
@@ -281,13 +281,30 @@ app.post('/converse', async (req, res) => {
   res.end();
 });
 
-// ── x402 protected service endpoint (seller side demo) ───────────────────────
+// ── x402 protected service endpoint — dynamic amount via ?amount=X ───────────
 
-app.get('/service/data-query', requirePayment('$0.005'), (req, res) => {
+app.get('/service/data-query', (req, res, next) => {
+  if (!process.env.SELLER_ADDRESS) { next(); return; }
+  const raw    = parseFloat(req.query.amount as string);
+  const amount = isNaN(raw) ? 0.05 : Math.min(raw, MAX_DEAL_USDC);
+  const mw     = getGatewayMiddleware().require(`$${amount.toFixed(4)}`);
+  (mw as any)(req, res, next);
+}, (req, res) => {
   res.json({
     data: 'DeFi on-chain analytics — 30d volume, TVL, wallet cohorts',
     paid_by: (req as any).payment?.payer ?? 'unknown',
     timestamp: new Date().toISOString(),
+  });
+});
+
+// ── Debug: check which payment env vars are configured ────────────────────────
+
+app.get('/debug/payment', (_req, res) => {
+  res.json({
+    BUYER_PRIVATE_KEY: !!process.env.BUYER_PRIVATE_KEY,
+    SELLER_ADDRESS:    !!process.env.SELLER_ADDRESS,
+    ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
+    mode: (process.env.BUYER_PRIVATE_KEY && process.env.SELLER_ADDRESS) ? 'real' : 'simulated',
   });
 });
 

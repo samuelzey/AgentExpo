@@ -206,6 +206,11 @@ try {
     const badge = document.getElementById('myBadge');
     badge.textContent = myHandle;
     badge.style.display = 'inline-block';
+  } else {
+    // No session — show register prompt
+    const badge = document.getElementById('myBadge');
+    badge.innerHTML = '<a href="/" style="color:rgba(255,255,255,0.7);text-decoration:none">← Register to negotiate</a>';
+    badge.style.display = 'inline-block';
   }
 } catch {}
 
@@ -771,16 +776,29 @@ canvas.addEventListener('mousemove', (e) => {
   canvas.style.cursor = 'default';
 });
 
-canvas.addEventListener('click', () => {
-  if (!hoveredAgent) return;
-  const agent   = agents.find(a => a.handle === hoveredAgent);
-  const isNeg   = activeConvos.some(c => c.agent_a === hoveredAgent || c.agent_b === hoveredAgent);
-  const canTalk = myHandle && !isBusy && hoveredAgent !== myHandle && !isNeg;
+canvas.addEventListener('click', (e) => {
+  // Re-detect on click (don't rely solely on hoveredAgent — mousemove may have missed)
+  const rect = canvas.getBoundingClientRect();
+  const mx   = e.clientX - rect.left;
+  const my   = e.clientY - rect.top;
+  let clicked = null;
+  for (const agent of agents) {
+    const state = agentStates.get(agent.handle);
+    if (!state) continue;
+    const dx = mx - state.x, dy = my - state.y;
+    if (Math.sqrt(dx*dx + dy*dy) < AGENT_R + 10) { clicked = agent; break; }
+  }
+  if (!clicked) return;
+
+  const isNeg   = activeConvos.some(c => c.agent_a === clicked.handle || c.agent_b === clicked.handle);
+  const canTalk = myHandle && !isBusy && clicked.handle !== myHandle && !isNeg;
 
   if (canTalk) {
-    startFloorConverse(hoveredAgent);
-  } else if (agent?.arc_address) {
-    window.open(`https://testnet.arcscan.app/address/${agent.arc_address}`, '_blank');
+    startFloorConverse(clicked.handle);
+  } else if (!myHandle) {
+    window.location.href = '/';
+  } else if (clicked.arc_address) {
+    window.open(`https://testnet.arcscan.app/address/${clicked.arc_address}`, '_blank');
   }
 });
 

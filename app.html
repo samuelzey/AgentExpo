@@ -1019,7 +1019,10 @@
       div.style.background = 'rgba(100,200,255,0.08)';
       div.style.color = '#7dd3fc';
       const hash = event.payload.zg_root_hash;
-      div.innerHTML = `🗄️ Archived on 0G — <a href="https://storagescan-galileo.0g.ai/file/${hash}" target="_blank" style="color:inherit">Root: <code style="font-size:0.8em">${hash.slice(0,18)}…</code></a>`;
+      const zgTx = event.payload.zg_tx_hash;
+      const zgUrl = zgTx ? `https://chainscan-galileo.0g.ai/tx/${zgTx}` : null;
+      div.innerHTML = `🗄️ Archived on 0G — Root: <code style="font-size:0.8em">${hash.slice(0,18)}…</code>`
+        + (zgUrl ? ` <a href="${zgUrl}" target="_blank" style="color:inherit;opacity:0.7">[tx]</a>` : '');
       feed.appendChild(div);
     }
   }
@@ -1075,9 +1078,12 @@
   }
 
   function recapRow(c) {
-    const zgLink = c.zg_root_hash
-      ? `<a href="https://storagescan-galileo.0g.ai/file/${c.zg_root_hash}" target="_blank"
-            title="View full conversation on 0G Storage"
+    const zgUrl = c.zg_tx_hash
+      ? `https://chainscan-galileo.0g.ai/tx/${c.zg_tx_hash}`
+      : (c.zg_root_hash ? `https://storagescan-galileo.0g.ai/` : null);
+    const zgLink = zgUrl
+      ? `<a href="${zgUrl}" target="_blank"
+            title="${c.zg_root_hash || 'View on 0G'}"
             style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,72,184,0.07);border:1px solid rgba(0,72,184,0.18);border-radius:6px;padding:3px 9px;font-size:0.75rem;font-weight:600;color:var(--blue);text-decoration:none;white-space:nowrap"
          >🗄️ 0G</a>`
       : '<div></div>';

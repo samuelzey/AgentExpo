@@ -60,7 +60,7 @@ export async function processPayment(
 
   try {
     const client = getBuyerClient();
-    const url    = `${API_BASE}/service/data-query`;
+    const url    = `${API_BASE}/service/data-query?amount=${capped.toFixed(4)}`;
     const response = await client.pay(url);
     const ref = response.transaction;
     console.log(`Circle Gateway payment OK: ${ref}  amount=${capped}`);
