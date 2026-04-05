@@ -133,7 +133,10 @@
       background: var(--red);
       color: var(--white);
       border-color: var(--red);
+      cursor: pointer;
+      transition: transform 0.1s;
     }
+    .btn-tickets:active { transform: scale(0.97); }
     .btn-tickets .dot { background: var(--cannes-dark); }
 
     .btn-live {
@@ -186,6 +189,35 @@
       margin-bottom: 22px;
     }
 
+    .tagline .word-european {
+      display: inline-block;
+      transition: opacity 0.25s ease;
+    }
+
+    .tagline .word-agent {
+      display: none;
+      color: var(--red);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    /* Triggered state */
+    body.revealed .tagline .word-european {
+      display: none;
+    }
+    body.revealed .tagline .word-agent {
+      display: inline-block;
+      opacity: 1;
+    }
+
+    /* Hero title glitch */
+    .hero-title {
+      transition: color 0.3s ease;
+    }
+    body.revealed .hero-title {
+      color: var(--white);
+    }
+
     .description {
       font-size: 14px;
       font-weight: 400;
@@ -214,7 +246,7 @@
           <p>Palais des Festivals</p>
           <p>Cannes, FR</p>
           <div class="buttons">
-            <div class="btn btn-tickets">
+            <div class="btn btn-tickets" onclick="reveal()">
               <span class="dot"></span>
               BUY TICKETS
             </div>
@@ -241,7 +273,7 @@
       <div class="title-gap"></div>
       <div class="right-inner">
         <div class="tagline">
-          The Largest<br>Annual<br>European<br>Ethereum<br>Event.
+          The Largest<br>Annual<br><span class="word-european">European</span><span class="word-agent">Agent</span><br>Ethereum<br>Event.
         </div>
         <p class="description">
           The Ethereum Community Conference (EthCC) is the largest and
@@ -254,5 +286,26 @@
 
   </div>
 
+<script>
+function reveal() {
+  if (document.body.classList.contains('revealed')) return;
+
+  // Glitch the hero title briefly, then settle
+  const title = document.querySelector('.hero-title');
+  const glitchFrames = ['EthAI[9]', 'Ag3ntX', 'EthCC[9]', '▓▓▓▓▓', 'EthCC[9]'];
+  let i = 0;
+  const original = title.textContent;
+  const glitch = setInterval(() => {
+    title.textContent = glitchFrames[i % glitchFrames.length];
+    i++;
+    if (i >= glitchFrames.length) {
+      clearInterval(glitch);
+      title.textContent = original;
+      // Now swap EUROPEAN → AGENT
+      document.body.classList.add('revealed');
+    }
+  }, 80);
+}
+</script>
 </body>
 </html>
